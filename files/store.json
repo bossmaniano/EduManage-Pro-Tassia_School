@@ -1,0 +1,31 @@
+{
+  "students": [
+    {"id": "s-001", "name": "Alice Johnson", "grade": "Grade 10", "email": "alice.j@school.edu"},
+    {"id": "s-002", "name": "Bob Martinez", "grade": "Grade 11", "email": "bob.m@school.edu"},
+    {"id": "s-003", "name": "Clara Smith", "grade": "Grade 10", "email": "clara.s@school.edu"},
+    {"id": "s-004", "name": "David Lee", "grade": "Grade 12", "email": "david.l@school.edu"},
+    {"id": "s-005", "name": "Eva Brown", "grade": "Grade 11", "email": "eva.b@school.edu"},
+    {"id": "s-006", "name": "Frank Wilson", "grade": "Grade 12", "email": "frank.w@school.edu"}
+  ],
+  "subjects": [
+    {"id": "sub-001", "name": "Mathematics", "rubric": "Standard Math Rubric"},
+    {"id": "sub-002", "name": "English", "rubric": "Language Arts Rubric"},
+    {"id": "sub-003", "name": "Science", "rubric": "STEM Rubric"},
+    {"id": "sub-004", "name": "History", "rubric": "Humanities Rubric"},
+    {"id": "sub-005", "name": "Art", "rubric": "Creative Arts Rubric"}
+  ],
+  "grades": [
+    {"id": "g-001", "studentId": "s-001", "subjectId": "sub-001", "score": 92, "comment": "Exceptional performance", "date": "2024-11-15"},
+    {"id": "g-002", "studentId": "s-001", "subjectId": "sub-002", "score": 78, "comment": "Very good performance", "date": "2024-11-16"},
+    {"id": "g-003", "studentId": "s-002", "subjectId": "sub-001", "score": 65, "comment": "Good performance", "date": "2024-11-15"},
+    {"id": "g-004", "studentId": "s-002", "subjectId": "sub-003", "score": 45, "comment": "Fair performance", "date": "2024-11-17"},
+    {"id": "g-005", "studentId": "s-003", "subjectId": "sub-002", "score": 88, "comment": "Very good performance", "date": "2024-11-16"},
+    {"id": "g-006", "studentId": "s-003", "subjectId": "sub-004", "score": 35, "comment": "Needs improvement", "date": "2024-11-18"},
+    {"id": "g-007", "studentId": "s-004", "subjectId": "sub-001", "score": 95, "comment": "Exceptional performance", "date": "2024-11-15"},
+    {"id": "g-008", "studentId": "s-004", "subjectId": "sub-005", "score": 72, "comment": "Good performance", "date": "2024-11-19"},
+    {"id": "g-009", "studentId": "s-005", "subjectId": "sub-003", "score": 25, "comment": "Below average", "date": "2024-11-17"},
+    {"id": "g-010", "studentId": "s-005", "subjectId": "sub-004", "score": 58, "comment": "Good performance", "date": "2024-11-18"},
+    {"id": "g-011", "studentId": "s-006", "subjectId": "sub-001", "score": 15, "comment": "Well below average", "date": "2024-11-15"},
+    {"id": "g-012", "studentId": "s-006", "subjectId": "sub-002", "score": 7, "comment": "Minimal performance", "date": "2024-11-16"}
+  ]
+}

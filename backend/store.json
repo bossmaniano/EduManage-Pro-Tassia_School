@@ -1,0 +1,230 @@
+{
+  "students": [
+    {
+      "id": "fb0841d9-47b9-4101-bfe0-ad312f4134c3",
+      "name": "rowlands onyango",
+      "classId": "class-d87896"
+    },
+    {
+      "id": "5b991fdd-567f-42c6-898b-3f53aabcae6b",
+      "name": "viola faith",
+      "classId": "class-d87896"
+    }
+  ],
+  "subjects": [
+    {
+      "id": "sub-001",
+      "name": "Mathematics",
+      "rubric": "Standard Math Rubric"
+    },
+    {
+      "id": "sub-002",
+      "name": "English",
+      "rubric": "Language Arts Rubric"
+    },
+    {
+      "id": "sub-004",
+      "name": "Kiswahili",
+      "rubric": ""
+    },
+    {
+      "id": "sub-005",
+      "name": "Integrated science",
+      "rubric": ""
+    },
+    {
+      "id": "sub-75ab6c9f",
+      "name": "Creative Arts & Sports",
+      "rubric": ""
+    },
+    {
+      "id": "sub-41df6cf3",
+      "name": "Pre-technical studies",
+      "rubric": ""
+    },
+    {
+      "id": "sub-8e64bde2",
+      "name": "Social Studies",
+      "rubric": ""
+    },
+    {
+      "id": "sub-5fc2f6b1",
+      "name": "Religious Studies",
+      "rubric": ""
+    }
+  ],
+  "grades": [
+    {
+      "id": "d297c1bd-ff74-47d5-840f-9e884364d41c",
+      "studentId": "5b991fdd-567f-42c6-898b-3f53aabcae6b",
+      "subjectId": "sub-004",
+      "score": 81,
+      "comment": "Very good performance",
+      "date": "2026-03-08",
+      "examInstanceId": "exam-3f43338d",
+      "isLocked": true,
+      "submittedBy": "u-665b22b6"
+    },
+    {
+      "id": "0f43b940-008f-4a93-a9e2-d94977f7f744",
+      "studentId": "fb0841d9-47b9-4101-bfe0-ad312f4134c3",
+      "subjectId": "sub-004",
+      "score": 90,
+      "comment": "Exceptional performance",
+      "date": "2026-03-08",
+      "examInstanceId": "exam-3f43338d",
+      "isLocked": true,
+      "submittedBy": "u-665b22b6"
+    }
+  ],
+  "users": [
+    {
+      "id": "u-001",
+      "username": "admin",
+      "passwordHash": "scrypt:32768:8:1$hqn0yVymaX8lGVuT$d3a43971f835d16a0fe808b76e294aca3a001fc65d92d7df73ea2cb7d5f313130b7e54efe823926b50bed53c3db7ad997f864dfed23a65f53c339b60f7a97251",
+      "role": "Admin",
+      "assignedSubjects": []
+    },
+    {
+      "id": "u-002",
+      "username": "teacher_math",
+      "passwordHash": "scrypt:32768:8:1$Pttujz2OhavDbPHz$795401ecb3527639e5b8a481fea173976d63592cb1ec17aec8e2091cd6dd45f03458c024a3e2b8917b17edcb3ddb7be29fb8c2e7966087a1d5076c65a5f17b70",
+      "role": "Teacher",
+      "assignedSubjects": [
+        "sub-001"
+      ]
+    },
+    {
+      "id": "u-003",
+      "username": "teacher_eng",
+      "passwordHash": "scrypt:32768:8:1$HisS5SUNGnsZ4Iox$4beb546a23c25dc2a8e18b677d77e4017a8b57c1b837e274ccc4fc3cc56409ede0062f9be1cb198b65fe7c763e61a385757e01260cd2c31d6df6b62143460561",
+      "role": "Teacher",
+      "assignedSubjects": [
+        "sub-002"
+      ]
+    },
+    {
+      "id": "u-66a33148",
+      "username": "teacher_kiswahili",
+      "passwordHash": "scrypt:32768:8:1$soOvoKdCdmFX2uZ2$aeba0f517a8037dc14746d2f160458919a0744d31dc06dd45b3f0f98f989e3208e44bcd08657ff9665d001d177740e8a5cbb0bb6ef7c7a4a13f4e7e4a22d590f",
+      "role": "Teacher",
+      "assignedSubjects": [
+        "sub-005"
+      ],
+      "assignedClasses": [
+        "class-d77688",
+        "class-004",
+        "class-003",
+        "class-002"
+      ]
+    },
+    {
+      "id": "u-665b22b6",
+      "username": "viola",
+      "passwordHash": "scrypt:32768:8:1$tbT01SolwJuBROqO$2364df9d3db9b07b3e70aa369a8b1e6d0bc918fbc292c5557043d40ea71159e35d31abe900c56b29ab386c48a9fb8175ee4130b21d4e4ec1f9d4f473412be93e",
+      "role": "Teacher",
+      "assignedSubjects": [
+        "sub-005",
+        "sub-004"
+      ],
+      "assignedClasses": [
+        "class-002",
+        "class-003",
+        "class-004",
+        "class-d77688",
+        "class-c4376c",
+        "class-d87896",
+        "class-5e6127",
+        "class-963936",
+        "class-42a1cf",
+        "class-2dd46c"
+      ]
+    }
+  ],
+  "exam_instances": [
+    {
+      "id": "exam-001",
+      "name": "Term 1 Final Exam, 2025"
+    },
+    {
+      "id": "exam-3f43338d",
+      "name": "END TERM 1 2026"
+    }
+  ],
+  "classes": [
+    {
+      "id": "class-d77688",
+      "name": "grade 9 blue",
+      "academicYear": "2026",
+      "subjects": [
+        "sub-001",
+        "sub-002",
+        "sub-004",
+        "sub-005",
+        "sub-75ab6c9f",
+        "sub-41df6cf3",
+        "sub-8e64bde2",
+        "sub-5fc2f6b1"
+      ]
+    },
+    {
+      "id": "class-c4376c",
+      "name": "grade 9 red",
+      "academicYear": "2026",
+      "subjects": [
+        "sub-001",
+        "sub-002",
+        "sub-004",
+        "sub-005",
+        "sub-75ab6c9f",
+        "sub-41df6cf3",
+        "sub-8e64bde2"
+      ]
+    },
+    {
+      "id": "class-d87896",
+      "name": "grade 8 red",
+      "academicYear": "2026",
+      "subjects": [
+        "sub-001",
+        "sub-002",
+        "sub-004",
+        "sub-005",
+        "sub-75ab6c9f",
+        "sub-41df6cf3",
+        "sub-8e64bde2",
+        "sub-5fc2f6b1"
+      ]
+    },
+    {
+      "id": "class-5e6127",
+      "name": "grade 8 blue",
+      "academicYear": "2026",
+      "subjects": [
+        "sub-001",
+        "sub-002",
+        "sub-004",
+        "sub-005",
+        "sub-75ab6c9f",
+        "sub-41df6cf3",
+        "sub-8e64bde2",
+        "sub-5fc2f6b1"
+      ]
+    },
+    {
+      "id": "class-963936",
+      "name": "grade 7 blue",
+      "academicYear": "2026"
+    },
+    {
+      "id": "class-42a1cf",
+      "name": "grade 7 red",
+      "academicYear": "2026"
+    },
+    {
+      "id": "class-2dd46c",
+      "name": "grade 7 green",
+      "academicYear": "2026"
+    }
+  ]
+}
