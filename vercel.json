@@ -1,5 +1,13 @@
 {
+  "version": 2,
   "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "outputDirectory": "dist"
+      }
+    },
     {
       "src": "backend/app.py",
       "use": "@vercel/python"
@@ -9,6 +17,13 @@
     {
       "src": "/api/(.*)",
       "dest": "backend/app.py"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/dist/index.html"
     }
   ]
 }

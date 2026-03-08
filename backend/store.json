@@ -80,10 +80,11 @@
   "users": [
     {
       "id": "u-001",
-      "username": "admin",
-      "passwordHash": "scrypt:32768:8:1$AE6Wnx0GqR6vCro9$021d72344b0cfb9db86fd5c428972704b10ae735bfb333484e2f135b2985e378760cce8217ab7b4783b0e6d003247bdfa6fab7af72209ff8f3d8ebc2eed2d6d7",
+      "username": "admin123",
+      "passwordHash": "scrypt:32768:8:1$sOXDC3DdFYx1T8uE$3e4e764a9ba4c6152bffed9f4c893326f201324b7e28bfb09f2394902a1e322ffb40272e6838c84211c3e4b7dd5fdd739663b1fa89cfa75a31571fe04727184f",
       "role": "Admin",
-      "assignedSubjects": []
+      "assignedSubjects": [],
+      "assignedClasses": []
     },
     {
       "id": "u-002",

@@ -926,6 +926,45 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 18080))
     app.run(host="0.0.0.0", port=port, debug=False)
 
-# Vercel handler
+# Vercel handler for serverless
 def handler(request, context):
-    return app(request, context)
+    # Use Flask's test client to handle Vercel requests
+    from werkzeug.test import Client
+    from werkzeug.wrappers import Response
+    
+    # Get the path and method from the request
+    path = request.uri or '/'
+    method = request.method or 'GET'
+    
+    # Get headers from request
+    headers = {}
+    if request.headers:
+        for key in request.headers:
+            headers[key] = request.headers[key]
+    
+    # Get body if present
+    body = b''
+    if request.body:
+        if isinstance(request.body, str):
+            body = request.body.encode('utf-8')
+        else:
+            body = request.body
+    
+    # Use Flask test client
+    client = app.test_client()
+    
+    # Make the request
+    response = client.open(
+        path=path,
+        method=method,
+        headers=headers,
+        data=body,
+        content_type=headers.get('Content-Type', 'application/json')
+    )
+    
+    # Return Vercel-compatible response
+    return {
+        'statusCode': response.status_code,
+        'headers': dict(response.headers),
+        'body': response.get_data(as_text=True)
+    }
