@@ -81,7 +81,7 @@
     {
       "id": "u-001",
       "username": "admin",
-      "passwordHash": "scrypt:32768:8:1$hqn0yVymaX8lGVuT$d3a43971f835d16a0fe808b76e294aca3a001fc65d92d7df73ea2cb7d5f313130b7e54efe823926b50bed53c3db7ad997f864dfed23a65f53c339b60f7a97251",
+      "passwordHash": "scrypt:32768:8:1$AE6Wnx0GqR6vCro9$021d72344b0cfb9db86fd5c428972704b10ae735bfb333484e2f135b2985e378760cce8217ab7b4783b0e6d003247bdfa6fab7af72209ff8f3d8ebc2eed2d6d7",
       "role": "Admin",
       "assignedSubjects": []
     },
