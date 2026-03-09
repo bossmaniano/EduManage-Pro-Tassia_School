@@ -34,7 +34,7 @@ if USE_SUPABASE:
 # Configure CORS - allow both local development and production URLs
 # Update VERCEL_FRONTEND_URL to your production frontend URL on Vercel
 VERCEL_FRONTEND_URL = os.environ.get("VERCEL_FRONTEND_URL", "")
-ALLOWED_ORIGINS = ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"]
+ALLOWED_ORIGINS = ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "https://tassia-school.netlify.app"]
 if VERCEL_FRONTEND_URL:
     ALLOWED_ORIGINS.append(VERCEL_FRONTEND_URL)
 
