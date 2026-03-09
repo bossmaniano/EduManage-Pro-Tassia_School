@@ -18,6 +18,19 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
+# Use Supabase if USE_SUPABASE env var is set
+USE_SUPABASE = os.environ.get('USE_SUPABASE', 'false').lower() == 'true'
+
+if USE_SUPABASE:
+    from database import (
+        get_users, get_user_by_username, create_user, update_user, delete_user,
+        get_students, get_student_by_id, create_student, update_student, delete_student,
+        get_subjects, create_subject, update_subject, delete_subject,
+        get_grades, create_grade, update_grade, delete_grade,
+        get_classes, get_class_by_id, create_class, update_class, delete_class,
+        get_exam_instances, create_exam_instance, delete_exam_instance
+    )
+
 # Configure CORS - allow both local development and production URLs
 # Update VERCEL_FRONTEND_URL to your production frontend URL on Vercel
 VERCEL_FRONTEND_URL = os.environ.get("VERCEL_FRONTEND_URL", "")
@@ -29,12 +42,19 @@ CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True)
 
 STORE_PATH = os.path.join(os.path.dirname(__file__), "store.json")
 
-
 # ─────────────────────────────────────────────
 # DATA LAYER
 # ─────────────────────────────────────────────
 
 def read_store() -> dict:
+    """Read data from Supabase or local file"""
+    if USE_SUPABASE:
+        try:
+            from database import get_store
+            return get_store()
+        except Exception as e:
+            print(f"Supabase error: {e}, falling back to local store")
+    
     with open(STORE_PATH, "r") as f:
         fcntl.flock(f, fcntl.LOCK_SH)
         try:
@@ -44,6 +64,47 @@ def read_store() -> dict:
 
 
 def write_store(data: dict) -> None:
+    """Write data to Supabase or local file"""
+    if USE_SUPABASE:
+        # For Supabase, we need to sync each table
+        try:
+            from database import (
+                supabase, get_users, get_user_by_username, create_user, update_user, delete_user,
+                get_students, get_student_by_id, create_student, update_student, delete_student,
+                get_subjects, create_subject, update_subject, delete_subject,
+                get_grades, create_grade, update_grade, delete_grade,
+                get_classes, get_class_by_id, create_class, update_class, delete_class,
+                get_exam_instances, create_exam_instance, delete_exam_instance
+            )
+            # Sync each table - delete all and re-insert
+            # Users
+            supabase.table('users').delete().neq('id', '').execute()
+            for user in data.get('users', []):
+                supabase.table('users').insert(user).execute()
+            # Students
+            supabase.table('students').delete().neq('id', '').execute()
+            for student in data.get('students', []):
+                supabase.table('students').insert(student).execute()
+            # Subjects
+            supabase.table('subjects').delete().neq('id', '').execute()
+            for subject in data.get('subjects', []):
+                supabase.table('subjects').insert(subject).execute()
+            # Classes
+            supabase.table('classes').delete().neq('id', '').execute()
+            for cls in data.get('classes', []):
+                supabase.table('classes').insert(cls).execute()
+            # Grades
+            supabase.table('grades').delete().neq('id', '').execute()
+            for grade in data.get('grades', []):
+                supabase.table('grades').insert(grade).execute()
+            # Exam instances
+            supabase.table('exam_instances').delete().neq('id', '').execute()
+            for exam in data.get('exam_instances', []):
+                supabase.table('exam_instances').insert(exam).execute()
+            return
+        except Exception as e:
+            print(f"Supabase write error: {e}, falling back to local store")
+    
     with open(STORE_PATH, "r+") as f:
         fcntl.flock(f, fcntl.LOCK_EX)
         try:

@@ -1,0 +1,55 @@
+functionsDirectory = "/home/ian-assah/Desktop/TASSIA_SCHOOL_PROJECT/netlify/functions"
+functionsDirectoryOrigin = "default"
+redirectsOrigin = "config"
+plugins = []
+headers = []
+
+[build]
+publish = "/home/ian-assah/Desktop/TASSIA_SCHOOL_PROJECT/frontend/dist"
+publishOrigin = "config"
+commandOrigin = "config"
+command = "cd frontend && npm run build"
+functions = "/home/ian-assah/Desktop/TASSIA_SCHOOL_PROJECT/netlify/functions"
+
+[build.environment]
+NODE_VERSION = "18"
+
+[build.processing]
+
+[build.processing.css]
+
+[build.processing.html]
+
+[build.processing.images]
+
+[build.processing.js]
+
+[build.services]
+
+[functions]
+
+[functions."*"]
+
+[[redirects]]
+from = "/api/*"
+to = "https://tassia-school-api.onrender.com/api/:splat"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200.0
+force = false
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]

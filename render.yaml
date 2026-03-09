@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: tassia-school-api
+    env: python
+    region: oregon
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && python app.py
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: USE_SUPABASE
+        value: "true"
+      - key: SUPABASE_URL
+        value: "https://srtttdzdwchsqgzvmwlg.supabase.co"
+      - key: SUPABASE_KEY
+        value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNydHR0ZHpkd2Noc3FnenZtd2xnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMjgyNDksImV4cCI6MjA4ODYwNDI0OX0.LX9OnqUmVuqoPSA1F7uomE_5Dz6Ooyvqv4K5EU9RzoE"
+      - key: SECRET_KEY
+        value: "tassia-production-secret-key"

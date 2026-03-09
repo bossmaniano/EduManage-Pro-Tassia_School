@@ -135,7 +135,7 @@
     {
       "id": "u-001",
       "username": "admin123",
-      "passwordHash": "scrypt:32768:8:1$sOXDC3DdFYx1T8uE$3e4e764a9ba4c6152bffed9f4c893326f201324b7e28bfb09f2394902a1e322ffb40272e6838c84211c3e4b7dd5fdd739663b1fa89cfa75a31571fe04727184f",
+      "passwordHash": "scrypt:32768:8:1$XSinxcGE0RopYGCN$0f430a589b9c862016e6ff9f3748cf8468ce24e8a0d89b3c4a4114181ccbc849a2d7e34e50850cbf7af68d90752151965e444036d0cee22a8429ab7bb1c13af5",
       "role": "Admin",
       "assignedSubjects": [],
       "assignedClasses": []

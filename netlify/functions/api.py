@@ -1,6 +1,11 @@
-# Netlify Functions handler - imports and wraps the Flask app
+# Netlify Functions handler - imports and wraps the Flask app with Supabase enabled
 import sys
 import os
+
+# Enable Supabase
+os.environ['USE_SUPABASE'] = 'true'
+os.environ['SUPABASE_URL'] = 'https://srtttdzdwchsqgzvmwlg.supabase.co'
+os.environ['SUPABASE_KEY'] = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNydHR0ZHpkd2Noc3FnenZtd2xnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMjgyNDksImV4cCI6MjA4ODYwNDI0OX0.LX9OnqUmVuqoPSA1F7uomE_5Dz6Ooyvqv4K5EU9RzoE'
 
 # Add parent directory to path to import app
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
