@@ -9,6 +9,16 @@
       "id": "5b991fdd-567f-42c6-898b-3f53aabcae6b",
       "name": "viola faith",
       "classId": "class-d87896"
+    },
+    {
+      "id": "1377ad88-ef58-436e-83ac-d9c42c56f1d9",
+      "name": "sammy",
+      "classId": "class-d87896"
+    },
+    {
+      "id": "4cf69c88-c621-4a77-9e02-29d85b0807b6",
+      "name": "ian",
+      "classId": "class-c4376c"
     }
   ],
   "subjects": [
@@ -75,6 +85,50 @@
       "examInstanceId": "exam-3f43338d",
       "isLocked": true,
       "submittedBy": "u-665b22b6"
+    },
+    {
+      "id": "3c84d3a0-bb6c-491c-863d-e8e887290e7b",
+      "studentId": "4cf69c88-c621-4a77-9e02-29d85b0807b6",
+      "subjectId": "sub-001",
+      "score": 56,
+      "comment": "Fair performance",
+      "date": "2026-03-09",
+      "examInstanceId": "exam-3f43338d",
+      "isLocked": true,
+      "submittedBy": "u-e09c1bad"
+    },
+    {
+      "id": "2523f501-e8ef-433d-aaa9-cbd32d48bfc6",
+      "studentId": "1377ad88-ef58-436e-83ac-d9c42c56f1d9",
+      "subjectId": "sub-001",
+      "score": 85,
+      "comment": "Very good performance",
+      "date": "2026-03-09",
+      "examInstanceId": "exam-3f43338d",
+      "isLocked": true,
+      "submittedBy": "u-e09c1bad"
+    },
+    {
+      "id": "7643ab24-d1fc-4f2a-a1aa-e5207dc1a8ee",
+      "studentId": "5b991fdd-567f-42c6-898b-3f53aabcae6b",
+      "subjectId": "sub-001",
+      "score": 78,
+      "comment": "Very good performance",
+      "date": "2026-03-09",
+      "examInstanceId": "exam-3f43338d",
+      "isLocked": true,
+      "submittedBy": "u-e09c1bad"
+    },
+    {
+      "id": "dbee4fc3-b269-440d-b2ed-2064ec8a2feb",
+      "studentId": "fb0841d9-47b9-4101-bfe0-ad312f4134c3",
+      "subjectId": "sub-001",
+      "score": 60,
+      "comment": "Good performance",
+      "date": "2026-03-09",
+      "examInstanceId": "exam-3f43338d",
+      "isLocked": true,
+      "submittedBy": "u-e09c1bad"
     }
   ],
   "users": [
@@ -140,6 +194,26 @@
         "class-42a1cf",
         "class-2dd46c"
       ]
+    },
+    {
+      "id": "u-e09c1bad",
+      "username": "sammy",
+      "passwordHash": "scrypt:32768:8:1$EwZe9StjBBbOKgcY$f7efe693ce73c63dba7d948bad23da24ef26cce4cda507250fd18a5d763ec68bf5f25d21f6c41a9e9c09cddabfce485f3b8997ab77f4571da5cc3a71f9415f17",
+      "role": "Teacher",
+      "assignedSubjects": [
+        "sub-001",
+        "sub-005",
+        "sub-41df6cf3"
+      ],
+      "assignedClasses": [
+        "class-c4376c",
+        "class-d87896",
+        "class-5e6127",
+        "class-963936",
+        "class-42a1cf",
+        "class-2dd46c",
+        "class-eb0511"
+      ]
     }
   ],
   "exam_instances": [
@@ -153,21 +227,6 @@
     }
   ],
   "classes": [
-    {
-      "id": "class-d77688",
-      "name": "grade 9 blue",
-      "academicYear": "2026",
-      "subjects": [
-        "sub-001",
-        "sub-002",
-        "sub-004",
-        "sub-005",
-        "sub-75ab6c9f",
-        "sub-41df6cf3",
-        "sub-8e64bde2",
-        "sub-5fc2f6b1"
-      ]
-    },
     {
       "id": "class-c4376c",
       "name": "grade 9 red",
@@ -226,6 +285,21 @@
       "id": "class-2dd46c",
       "name": "grade 7 green",
       "academicYear": "2026"
+    },
+    {
+      "id": "class-eb0511",
+      "name": "grade 9 blue",
+      "academicYear": "2026",
+      "subjects": [
+        "sub-001",
+        "sub-002",
+        "sub-004",
+        "sub-005",
+        "sub-75ab6c9f",
+        "sub-41df6cf3",
+        "sub-8e64bde2",
+        "sub-5fc2f6b1"
+      ]
     }
   ]
 }

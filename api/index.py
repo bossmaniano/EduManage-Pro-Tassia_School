@@ -1,9 +1,15 @@
-# Vercel API handler - imports and wraps the Flask app
+# Vercel API handler - imports and wraps the Flask app with Supabase
 import sys
 import os
 
-# Add parent directory to path to import app
+# Add parent directory to path to import app and database
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Set environment variables for Supabase if not set
+if 'SUPABASE_URL' not in os.environ:
+    os.environ['SUPABASE_URL'] = 'https://srtttdzdwchsqgzvmwlg.supabase.co'
+if 'SUPABASE_KEY' not in os.environ:
+    os.environ['SUPABASE_KEY'] = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNydHR0ZHpkd2Noc3FnenZtd2xnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMjgyNDksImV4cCI6MjA4ODYwNDI0OX0.LX9OnqUmVuqoPSA1F7uomE_5Dz6Ooyvqv4K5EU9RzoE'
 
 from backend.app import app
 from werkzeug.test import Client
