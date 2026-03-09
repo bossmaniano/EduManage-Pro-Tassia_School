@@ -15,7 +15,71 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
+      "src": "/api/auth/login",
+      "dest": "backend/app.py"
+    },
+    {
+      "src": "/api/auth/logout",
+      "dest": "backend/app.py"
+    },
+    {
+      "src": "/api/auth/me",
+      "dest": "backend/app.py"
+    },
+    {
+      "src": "/api/dashboard/summary",
+      "dest": "backend/app.py"
+    },
+    {
+      "src": "/api/users",
+      "dest": "backend/app.py"
+    },
+    {
+      "src": "/api/users/(.*)",
+      "dest": "backend/app.py"
+    },
+    {
+      "src": "/api/students",
+      "dest": "backend/app.py"
+    },
+    {
+      "src": "/api/students/(.*)",
+      "dest": "backend/app.py"
+    },
+    {
+      "src": "/api/classes",
+      "dest": "backend/app.py"
+    },
+    {
+      "src": "/api/classes/(.*)",
+      "dest": "backend/app.py"
+    },
+    {
+      "src": "/api/subjects",
+      "dest": "backend/app.py"
+    },
+    {
+      "src": "/api/subjects/(.*)",
+      "dest": "backend/app.py"
+    },
+    {
+      "src": "/api/grades",
+      "dest": "backend/app.py"
+    },
+    {
+      "src": "/api/grades/(.*)",
+      "dest": "backend/app.py"
+    },
+    {
+      "src": "/api/exam-instances",
+      "dest": "backend/app.py"
+    },
+    {
+      "src": "/api/exam-instances/(.*)",
+      "dest": "backend/app.py"
+    },
+    {
+      "src": "/api/reports/(.*)",
       "dest": "backend/app.py"
     },
     {
