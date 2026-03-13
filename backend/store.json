@@ -1,24 +1,46 @@
 {
   "students": [
     {
-      "id": "fb0841d9-47b9-4101-bfe0-ad312f4134c3",
-      "name": "rowlands onyango",
-      "classId": "class-d87896"
+      "id": "s-001",
+      "name": "Alice Johnson",
+      "grade": "Grade 10",
+      "email": "alice.j@school.edu",
+      "classId": "class-3dd551"
     },
     {
-      "id": "5b991fdd-567f-42c6-898b-3f53aabcae6b",
-      "name": "viola faith",
-      "classId": "class-d87896"
+      "id": "s-002",
+      "name": "Bob Martinez",
+      "grade": "Grade 11",
+      "email": "bob.m@school.edu",
+      "classId": "class-3dd551"
     },
     {
-      "id": "1377ad88-ef58-436e-83ac-d9c42c56f1d9",
-      "name": "sammy",
-      "classId": "class-d87896"
+      "id": "s-003",
+      "name": "Clara Smith",
+      "grade": "Grade 10",
+      "email": "clara.s@school.edu",
+      "classId": "class-3dd551"
     },
     {
-      "id": "4cf69c88-c621-4a77-9e02-29d85b0807b6",
-      "name": "ian",
-      "classId": "class-c4376c"
+      "id": "s-004",
+      "name": "David Lee",
+      "grade": "Grade 12",
+      "email": "david.l@school.edu",
+      "classId": "class-3dd551"
+    },
+    {
+      "id": "s-005",
+      "name": "Eva Brown",
+      "grade": "Grade 11",
+      "email": "eva.b@school.edu",
+      "classId": "class-3dd551"
+    },
+    {
+      "id": "s-006",
+      "name": "Frank Wilson",
+      "grade": "Grade 12",
+      "email": "frank.w@school.edu",
+      "classId": "class-3dd551"
     }
   ],
   "subjects": [
@@ -33,273 +55,161 @@
       "rubric": "Language Arts Rubric"
     },
     {
+      "id": "sub-003",
+      "name": "Science",
+      "rubric": "STEM Rubric"
+    },
+    {
       "id": "sub-004",
-      "name": "Kiswahili",
-      "rubric": ""
+      "name": "History",
+      "rubric": "Humanities Rubric"
     },
     {
       "id": "sub-005",
-      "name": "Integrated science",
-      "rubric": ""
-    },
-    {
-      "id": "sub-75ab6c9f",
-      "name": "Creative Arts & Sports",
-      "rubric": ""
-    },
-    {
-      "id": "sub-41df6cf3",
-      "name": "Pre-technical studies",
-      "rubric": ""
-    },
-    {
-      "id": "sub-8e64bde2",
-      "name": "Social Studies",
-      "rubric": ""
-    },
-    {
-      "id": "sub-5fc2f6b1",
-      "name": "Religious Studies",
-      "rubric": ""
+      "name": "Art",
+      "rubric": "Creative Arts Rubric"
     }
   ],
   "grades": [
     {
-      "id": "d297c1bd-ff74-47d5-840f-9e884364d41c",
-      "studentId": "5b991fdd-567f-42c6-898b-3f53aabcae6b",
-      "subjectId": "sub-004",
-      "score": 81,
-      "comment": "Very good performance",
-      "date": "2026-03-08",
-      "examInstanceId": "exam-3f43338d",
-      "isLocked": true,
-      "submittedBy": "u-665b22b6"
-    },
-    {
-      "id": "0f43b940-008f-4a93-a9e2-d94977f7f744",
-      "studentId": "fb0841d9-47b9-4101-bfe0-ad312f4134c3",
-      "subjectId": "sub-004",
-      "score": 90,
-      "comment": "Exceptional performance",
-      "date": "2026-03-08",
-      "examInstanceId": "exam-3f43338d",
-      "isLocked": true,
-      "submittedBy": "u-665b22b6"
-    },
-    {
-      "id": "3c84d3a0-bb6c-491c-863d-e8e887290e7b",
-      "studentId": "4cf69c88-c621-4a77-9e02-29d85b0807b6",
+      "id": "g-001",
+      "studentId": "s-001",
       "subjectId": "sub-001",
-      "score": 80,
+      "score": 86,
       "comment": "Very good performance",
-      "date": "2026-03-09",
-      "examInstanceId": "exam-3f43338d",
-      "isLocked": true,
-      "submittedBy": "u-e09c1bad"
+      "date": "2024-11-15"
     },
     {
-      "id": "2523f501-e8ef-433d-aaa9-cbd32d48bfc6",
-      "studentId": "1377ad88-ef58-436e-83ac-d9c42c56f1d9",
-      "subjectId": "sub-001",
-      "score": 85,
-      "comment": "Very good performance",
-      "date": "2026-03-09",
-      "examInstanceId": "exam-3f43338d",
-      "isLocked": true,
-      "submittedBy": "u-e09c1bad"
-    },
-    {
-      "id": "7643ab24-d1fc-4f2a-a1aa-e5207dc1a8ee",
-      "studentId": "5b991fdd-567f-42c6-898b-3f53aabcae6b",
-      "subjectId": "sub-001",
+      "id": "g-002",
+      "studentId": "s-001",
+      "subjectId": "sub-002",
       "score": 78,
       "comment": "Very good performance",
-      "date": "2026-03-09",
-      "examInstanceId": "exam-3f43338d",
-      "isLocked": true,
-      "submittedBy": "u-e09c1bad"
+      "date": "2024-11-16"
     },
     {
-      "id": "dbee4fc3-b269-440d-b2ed-2064ec8a2feb",
-      "studentId": "fb0841d9-47b9-4101-bfe0-ad312f4134c3",
+      "id": "g-003",
+      "studentId": "s-002",
       "subjectId": "sub-001",
-      "score": 60,
+      "score": 65,
       "comment": "Good performance",
-      "date": "2026-03-09",
-      "examInstanceId": "exam-3f43338d",
-      "isLocked": true,
-      "submittedBy": "u-e09c1bad"
+      "date": "2024-11-15"
+    },
+    {
+      "id": "g-004",
+      "studentId": "s-002",
+      "subjectId": "sub-003",
+      "score": 45,
+      "comment": "Fair performance",
+      "date": "2024-11-17"
+    },
+    {
+      "id": "g-005",
+      "studentId": "s-003",
+      "subjectId": "sub-002",
+      "score": 88,
+      "comment": "Very good performance",
+      "date": "2024-11-16"
+    },
+    {
+      "id": "g-006",
+      "studentId": "s-003",
+      "subjectId": "sub-004",
+      "score": 35,
+      "comment": "Needs improvement",
+      "date": "2024-11-18"
+    },
+    {
+      "id": "g-007",
+      "studentId": "s-004",
+      "subjectId": "sub-001",
+      "score": 95,
+      "comment": "Exceptional performance",
+      "date": "2024-11-15"
+    },
+    {
+      "id": "g-008",
+      "studentId": "s-004",
+      "subjectId": "sub-005",
+      "score": 72,
+      "comment": "Good performance",
+      "date": "2024-11-19"
+    },
+    {
+      "id": "g-009",
+      "studentId": "s-005",
+      "subjectId": "sub-003",
+      "score": 25,
+      "comment": "Below average",
+      "date": "2024-11-17"
+    },
+    {
+      "id": "g-010",
+      "studentId": "s-005",
+      "subjectId": "sub-004",
+      "score": 58,
+      "comment": "Good performance",
+      "date": "2024-11-18"
+    },
+    {
+      "id": "g-011",
+      "studentId": "s-006",
+      "subjectId": "sub-001",
+      "score": 15,
+      "comment": "Well below average",
+      "date": "2024-11-15"
+    },
+    {
+      "id": "g-012",
+      "studentId": "s-006",
+      "subjectId": "sub-002",
+      "score": 7,
+      "comment": "Minimal performance",
+      "date": "2024-11-16"
     }
   ],
   "users": [
     {
       "id": "u-001",
-      "username": "admin123",
-      "passwordHash": "scrypt:32768:8:1$XSinxcGE0RopYGCN$0f430a589b9c862016e6ff9f3748cf8468ce24e8a0d89b3c4a4114181ccbc849a2d7e34e50850cbf7af68d90752151965e444036d0cee22a8429ab7bb1c13af5",
+      "username": "admin",
+      "passwordHash": "scrypt:32768:8:1$iNOpLT9ytLLm7C9s$5ab524918622d0c508277beba85859a76c6a407d97bdc2679c9315d55cb761b47564d0ed07f3139529ada67413e8d02835a36b7222da56794adc972f9df3d90c",
       "role": "Admin",
       "assignedSubjects": [],
       "assignedClasses": []
     },
     {
       "id": "u-002",
-      "username": "teacher_math",
-      "passwordHash": "scrypt:32768:8:1$Pttujz2OhavDbPHz$795401ecb3527639e5b8a481fea173976d63592cb1ec17aec8e2091cd6dd45f03458c024a3e2b8917b17edcb3ddb7be29fb8c2e7966087a1d5076c65a5f17b70",
-      "role": "Teacher",
-      "assignedSubjects": [
-        "sub-001"
-      ]
-    },
-    {
-      "id": "u-003",
-      "username": "teacher_eng",
-      "passwordHash": "scrypt:32768:8:1$HisS5SUNGnsZ4Iox$4beb546a23c25dc2a8e18b677d77e4017a8b57c1b837e274ccc4fc3cc56409ede0062f9be1cb198b65fe7c763e61a385757e01260cd2c31d6df6b62143460561",
-      "role": "Teacher",
-      "assignedSubjects": [
-        "sub-002"
-      ]
-    },
-    {
-      "id": "u-66a33148",
-      "username": "teacher_kiswahili",
-      "passwordHash": "scrypt:32768:8:1$soOvoKdCdmFX2uZ2$aeba0f517a8037dc14746d2f160458919a0744d31dc06dd45b3f0f98f989e3208e44bcd08657ff9665d001d177740e8a5cbb0bb6ef7c7a4a13f4e7e4a22d590f",
-      "role": "Teacher",
-      "assignedSubjects": [
-        "sub-005"
-      ],
-      "assignedClasses": [
-        "class-d77688",
-        "class-004",
-        "class-003",
-        "class-002"
-      ]
-    },
-    {
-      "id": "u-665b22b6",
-      "username": "viola",
-      "passwordHash": "scrypt:32768:8:1$tbT01SolwJuBROqO$2364df9d3db9b07b3e70aa369a8b1e6d0bc918fbc292c5557043d40ea71159e35d31abe900c56b29ab386c48a9fb8175ee4130b21d4e4ec1f9d4f473412be93e",
-      "role": "Teacher",
-      "assignedSubjects": [
-        "sub-005",
-        "sub-004"
-      ],
-      "assignedClasses": [
-        "class-002",
-        "class-003",
-        "class-004",
-        "class-d77688",
-        "class-c4376c",
-        "class-d87896",
-        "class-5e6127",
-        "class-963936",
-        "class-42a1cf",
-        "class-2dd46c"
-      ]
-    },
-    {
-      "id": "u-e09c1bad",
-      "username": "sammy",
-      "passwordHash": "scrypt:32768:8:1$EwZe9StjBBbOKgcY$f7efe693ce73c63dba7d948bad23da24ef26cce4cda507250fd18a5d763ec68bf5f25d21f6c41a9e9c09cddabfce485f3b8997ab77f4571da5cc3a71f9415f17",
+      "username": "teacher",
+      "passwordHash": "scrypt:32768:8:1$iNOpLT9ytLLm7C9s$5ab524918622d0c508277beba85859a76c6a407d97bdc2679c9315d55cb761b47564d0ed07f3139529ada67413e8d02835a36b7222da56794adc972f9df3d90c",
       "role": "Teacher",
       "assignedSubjects": [
         "sub-001",
-        "sub-005",
-        "sub-41df6cf3"
+        "sub-002"
       ],
       "assignedClasses": [
-        "class-c4376c",
-        "class-d87896",
-        "class-5e6127",
-        "class-963936",
-        "class-42a1cf",
-        "class-2dd46c",
-        "class-eb0511"
+        "Grade 10",
+        "Grade 11"
+      ]
+    }
+  ],
+  "classes": [
+    {
+      "id": "class-3dd551",
+      "name": "Grade 9 blue",
+      "academicYear": "2026",
+      "subjects": [
+        "sub-001",
+        "sub-002",
+        "sub-003",
+        "sub-004",
+        "sub-005"
       ]
     }
   ],
   "exam_instances": [
     {
-      "id": "exam-001",
-      "name": "Term 1 Final Exam, 2025"
-    },
-    {
-      "id": "exam-3f43338d",
-      "name": "END TERM 1 2026"
-    }
-  ],
-  "classes": [
-    {
-      "id": "class-c4376c",
-      "name": "grade 9 red",
-      "academicYear": "2026",
-      "subjects": [
-        "sub-001",
-        "sub-002",
-        "sub-004",
-        "sub-005",
-        "sub-75ab6c9f",
-        "sub-41df6cf3",
-        "sub-8e64bde2"
-      ]
-    },
-    {
-      "id": "class-d87896",
-      "name": "grade 8 red",
-      "academicYear": "2026",
-      "subjects": [
-        "sub-001",
-        "sub-002",
-        "sub-004",
-        "sub-005",
-        "sub-75ab6c9f",
-        "sub-41df6cf3",
-        "sub-8e64bde2",
-        "sub-5fc2f6b1"
-      ]
-    },
-    {
-      "id": "class-5e6127",
-      "name": "grade 8 blue",
-      "academicYear": "2026",
-      "subjects": [
-        "sub-001",
-        "sub-002",
-        "sub-004",
-        "sub-005",
-        "sub-75ab6c9f",
-        "sub-41df6cf3",
-        "sub-8e64bde2",
-        "sub-5fc2f6b1"
-      ]
-    },
-    {
-      "id": "class-963936",
-      "name": "grade 7 blue",
-      "academicYear": "2026"
-    },
-    {
-      "id": "class-42a1cf",
-      "name": "grade 7 red",
-      "academicYear": "2026"
-    },
-    {
-      "id": "class-2dd46c",
-      "name": "grade 7 green",
-      "academicYear": "2026"
-    },
-    {
-      "id": "class-eb0511",
-      "name": "grade 9 blue",
-      "academicYear": "2026",
-      "subjects": [
-        "sub-001",
-        "sub-002",
-        "sub-004",
-        "sub-005",
-        "sub-75ab6c9f",
-        "sub-41df6cf3",
-        "sub-8e64bde2",
-        "sub-5fc2f6b1"
-      ]
+      "id": "exam-b705ac60",
+      "name": "end term 1 2026"
     }
   ]
 }

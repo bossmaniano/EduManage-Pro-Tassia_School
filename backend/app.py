@@ -10,6 +10,10 @@ import fcntl
 from datetime import date, datetime, timedelta
 from functools import wraps
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 import jwt
 from flask import Flask, jsonify, request, g, make_response
 from flask_cors import CORS
@@ -21,7 +25,21 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-i
 # Use Supabase if USE_SUPABASE env var is set
 USE_SUPABASE = os.environ.get('USE_SUPABASE', 'false').lower() == 'true'
 
+# Use Vercel Postgres if USE_VERCEL_PG env var is set
+USE_VERCEL_PG = os.environ.get('USE_VERCEL_PG', 'false').lower() == 'true'
+
 if USE_SUPABASE:
+    from database import (
+        get_users, get_user_by_username, create_user, update_user, delete_user,
+        get_students, get_student_by_id, create_student, update_student, delete_student,
+        get_subjects, create_subject, update_subject, delete_subject,
+        get_grades, create_grade, update_grade, delete_grade,
+        get_classes, get_class_by_id, create_class, update_class, delete_class,
+        get_exam_instances, create_exam_instance, delete_exam_instance
+    )
+
+if USE_VERCEL_PG:
+    # Import Vercel Postgres database functions
     from database import (
         get_users, get_user_by_username, create_user, update_user, delete_user,
         get_students, get_student_by_id, create_student, update_student, delete_student,
@@ -69,38 +87,41 @@ def write_store(data: dict) -> None:
         # For Supabase, we need to sync each table
         try:
             from database import (
-                supabase, get_users, get_user_by_username, create_user, update_user, delete_user,
-                get_students, get_student_by_id, create_student, update_student, delete_student,
-                get_subjects, create_subject, update_subject, delete_subject,
-                get_grades, create_grade, update_grade, delete_grade,
-                get_classes, get_class_by_id, create_class, update_class, delete_class,
-                get_exam_instances, create_exam_instance, delete_exam_instance
+                supabase, 
+                map_user_to_db, map_student_to_db, map_subject_to_db,
+                map_grade_to_db, map_class_to_db, map_exam_instance_to_db
             )
             # Sync each table - delete all and re-insert
             # Users
             supabase.table('users').delete().neq('id', '').execute()
             for user in data.get('users', []):
-                supabase.table('users').insert(user).execute()
+                db_user = map_user_to_db(user)
+                supabase.table('users').insert(db_user).execute()
             # Students
             supabase.table('students').delete().neq('id', '').execute()
             for student in data.get('students', []):
-                supabase.table('students').insert(student).execute()
+                db_student = map_student_to_db(student)
+                supabase.table('students').insert(db_student).execute()
             # Subjects
             supabase.table('subjects').delete().neq('id', '').execute()
             for subject in data.get('subjects', []):
-                supabase.table('subjects').insert(subject).execute()
+                db_subject = map_subject_to_db(subject)
+                supabase.table('subjects').insert(db_subject).execute()
             # Classes
             supabase.table('classes').delete().neq('id', '').execute()
             for cls in data.get('classes', []):
-                supabase.table('classes').insert(cls).execute()
+                db_class = map_class_to_db(cls)
+                supabase.table('classes').insert(db_class).execute()
             # Grades
             supabase.table('grades').delete().neq('id', '').execute()
             for grade in data.get('grades', []):
-                supabase.table('grades').insert(grade).execute()
+                db_grade = map_grade_to_db(grade)
+                supabase.table('grades').insert(db_grade).execute()
             # Exam instances
             supabase.table('exam_instances').delete().neq('id', '').execute()
             for exam in data.get('exam_instances', []):
-                supabase.table('exam_instances').insert(exam).execute()
+                db_exam = map_exam_instance_to_db(exam)
+                supabase.table('exam_instances').insert(db_exam).execute()
             return
         except Exception as e:
             print(f"Supabase write error: {e}, falling back to local store")
@@ -344,6 +365,9 @@ def get_students():
         class_id = student.get("classId")
         if class_id and class_id in class_map:
             student["class"] = class_map[class_id]
+        # Include grade field if present (for fallback display)
+        if "grade" in student:
+            student["grade"] = student["grade"]
     return jsonify(students)
 
 

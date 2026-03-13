@@ -112,9 +112,11 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
           })}
           {/* Total Row */}
           <tr className="bg-gray-100 font-bold">
-            <td className="border border-black py-2 px-2" colSpan={2}>TOTAL</td>
+            <td className="border border-black py-2 px-2">GRAND TOTAL</td>
             <td className="border border-black py-2 px-2 text-center">{totalScore}</td>
-            <td className="border border-black py-2 px-2" colSpan={2}>AVERAGE: {avgScore}%</td>
+            <td className="border border-black py-2 px-2"></td>
+            <td className="border border-black py-2 px-2">AVERAGE: {avgScore}%</td>
+            <td className="border border-black py-2 px-2 text-center font-bold">{grades.reduce((sum, g) => sum + (getRubricAndPoints(g.score || 0).points || 0), 0)}</td>
             <td className="border border-black py-2 px-2"></td>
           </tr>
         </tbody>
@@ -123,22 +125,28 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
       {/* Footer Section */}
       <div className="grid grid-cols-2 gap-8 mt-8">
         <div>
-          <p className="font-semibold mb-1">Deputy Head Teacher's Remarks:</p>
+          <p className="font-semibold mb-1">Class Teacher's Remarks:</p>
           <div className="border border-black h-16"></div>
+          <p className="text-sm mt-1">Signature: _________________</p>
         </div>
         <div>
           <p className="font-semibold mb-1">Head Teacher's Remarks:</p>
           <div className="border border-black h-16"></div>
+          <p className="text-sm mt-1">Signature: _________________</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-8 mt-4">
+      <div className="grid grid-cols-3 gap-4 mt-4">
         <div>
           <p className="font-semibold mb-1">School Fee Arrears:</p>
           <div className="border border-black h-8"></div>
         </div>
         <div>
           <p className="font-semibold mb-1">Next Term Fee:</p>
+          <div className="border border-black h-8"></div>
+        </div>
+        <div>
+          <p className="font-semibold mb-1">Next Term Begin:</p>
           <div className="border border-black h-8"></div>
         </div>
       </div>

@@ -31,8 +31,9 @@ export default function StudentsPage({ onToast }) {
   useEffect(() => { load(); }, [load]);
 
   const filtered = students.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    (s.className && s.className.toLowerCase().includes(search.toLowerCase()))
+    (s.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (s.className && s.className.toLowerCase().includes(search.toLowerCase())) ||
+    (s.grade && s.grade.toLowerCase().includes(search.toLowerCase()))
   );
 
   const openAdd = () => { setEditStudent(null); setForm({ name: "", classId: "" }); setErrors({}); setModalOpen(true); };
@@ -112,13 +113,12 @@ export default function StudentsPage({ onToast }) {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center text-sm font-bold text-indigo-600">
-                              {s.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+                              {(s.name || '').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                             </div>
-                            <span className="font-semibold text-gray-800">{s.name}</span>
+                            <span className="font-semibold text-gray-800">{s.name || 'Unknown'}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4"><span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-semibold">{s.class?.name || s.className || 'Unassigned'}</span></td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{s.class?.academicYear || ''}</td>
+                        <td className="px-6 py-4"><span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-semibold">{s.class?.name || s.className || s.grade || 'Unassigned'}</span></td>
                         <td className="px-6 py-4">
                           <div className="flex gap-2">
                             <Button variant="ghost" onClick={() => openEdit(s)} className="p-2"><Icon d={Icons.edit} size={15} /></Button>
@@ -135,11 +135,11 @@ export default function StudentsPage({ onToast }) {
                   <div key={s.id} className="p-4 flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-sm font-bold text-indigo-600 flex-shrink-0">
-                        {s.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                        {(s.name || '').split(' ').map(n => n[0]).join('').slice(0, 2)}
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-800 text-sm">{s.name}</p>
-                        <p className="text-xs text-gray-500">{s.class?.name || s.className || 'Unassigned'}</p>
+                        <p className="font-semibold text-gray-800 text-sm">{s.name || 'Unknown'}</p>
+                        <p className="text-xs text-gray-500">{s.class?.name || s.className || s.grade || 'Unassigned'}</p>
                       </div>
                     </div>
                     <div className="flex gap-1">

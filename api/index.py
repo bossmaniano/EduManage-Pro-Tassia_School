@@ -1,15 +1,26 @@
-# Vercel API handler - imports and wraps the Flask app with Supabase
+# Vercel API handler - imports and wraps the Flask app
 import sys
 import os
 
 # Add parent directory to path to import app and database
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Set environment variables for Supabase if not set
+# Auto-detect Supabase credentials from Vercel environment
+# For Preview mode, Vercel/Supabase provides these variables:
+# - SUPABASE_DB_URL (or POSTGRES_URL for newer integrations)
+# - SUPABASE_AUTH_TOKEN or similar
+
+# Check for various Supabase environment variable names
 if 'SUPABASE_URL' not in os.environ:
-    os.environ['SUPABASE_URL'] = 'https://srtttdzdwchsqgzvmwlg.supabase.co'
+    # Try to get from Vercel integration
+    os.environ['SUPABASE_URL'] = os.environ.get('NEXT_PUBLIC_SUPABASE_URL', 'https://srtttdzdwchsqgzvmwlg.supabase.co')
+
 if 'SUPABASE_KEY' not in os.environ:
-    os.environ['SUPABASE_KEY'] = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNydHR0ZHpkd2Noc3FnenZtd2xnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMjgyNDksImV4cCI6MjA4ODYwNDI0OX0.LX9OnqUmVuqoPSA1F7uomE_5Dz6Ooyvqv4K5EU9RzoE'
+    os.environ['SUPABASE_KEY'] = os.environ.get('SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNydHR0ZHpkd2Noc3FnenZtd2xnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMjgyNDksImV4cCI6MjA4ODYwNDI0OX0.LX9OnqUmVuqoPSA1F7uomE_5Dz6Ooyvqv4K5EU9RzoE')
+
+# Ensure Supabase is enabled
+if 'USE_SUPABASE' not in os.environ:
+    os.environ['USE_SUPABASE'] = 'true'
 
 from backend.app import app
 from werkzeug.test import Client
