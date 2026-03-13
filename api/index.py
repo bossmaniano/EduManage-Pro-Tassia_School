@@ -3,7 +3,7 @@ import sys
 import os
 
 # Add parent directory to path to import app and database
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'backend'))
 
 # Auto-detect Supabase credentials from Vercel environment
 # For Preview mode, Vercel/Supabase provides these variables:
