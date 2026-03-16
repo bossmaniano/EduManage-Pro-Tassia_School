@@ -47,6 +47,12 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
     return subjects.filter(s => cls.subjects.includes(s.id));
   })();
 
+  // Calculate total points based on class subjects
+  const totalPoints = grades.reduce((sum, g) => {
+    const { points } = getRubricAndPoints(g.score || 0);
+    return sum + points;
+  }, 0);
+  
   // Calculate average based on class subjects
   const totalScore = grades.reduce((sum, g) => sum + (g.score || 0), 0);
   const avgScore = classSubjects.length > 0 ? Math.round(totalScore / classSubjects.length) : 0;
@@ -112,9 +118,9 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
           })}
           {/* Total Row */}
           <tr className="bg-gray-100 font-bold">
-            <td className="border border-black py-2 px-2" colSpan={2}>TOTAL</td>
-            <td className="border border-black py-2 px-2 text-center">{totalScore}</td>
-            <td className="border border-black py-2 px-2" colSpan={2}>AVERAGE: {avgScore}%</td>
+            <td className="border border-black py-2 px-2" colSpan={2}>TOTAL POINTS</td>
+            <td className="border border-black py-2 px-2 text-center">{totalPoints}</td>
+            <td className="border border-black py-2 px-2" colSpan={2}>TOTAL MARKS: {totalScore}</td>
             <td className="border border-black py-2 px-2"></td>
           </tr>
         </tbody>
@@ -123,12 +129,32 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
       {/* Footer Section */}
       <div className="grid grid-cols-2 gap-8 mt-8">
         <div>
-          <p className="font-semibold mb-1">Deputy Head Teacher's Remarks:</p>
-          <div className="border border-black h-16"></div>
+          <p className="font-semibold mb-1">Class Teacher's Remarks:</p>
+          <div className="border border-black h-16 mb-2"></div>
+          <div className="flex justify-between items-end">
+            <div>
+              <p className="text-xs text-gray-600">Signature:</p>
+              <div className="border-b border-black w-32 h-8"></div>
+            </div>
+            <div>
+              <p className="text-xs text-gray-600">Date:</p>
+              <div className="border-b border-black w-24 h-8"></div>
+            </div>
+          </div>
         </div>
         <div>
           <p className="font-semibold mb-1">Head Teacher's Remarks:</p>
-          <div className="border border-black h-16"></div>
+          <div className="border border-black h-16 mb-2"></div>
+          <div className="flex justify-between items-end">
+            <div>
+              <p className="text-xs text-gray-600">Signature:</p>
+              <div className="border-b border-black w-32 h-8"></div>
+            </div>
+            <div>
+              <p className="text-xs text-gray-600">Date:</p>
+              <div className="border-b border-black w-24 h-8"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -137,9 +163,15 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
           <p className="font-semibold mb-1">School Fee Arrears:</p>
           <div className="border border-black h-8"></div>
         </div>
-        <div>
-          <p className="font-semibold mb-1">Next Term Fee:</p>
-          <div className="border border-black h-8"></div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="font-semibold mb-1">Next Term Fee:</p>
+            <div className="border border-black h-8"></div>
+          </div>
+          <div>
+            <p className="font-semibold mb-1">Next Term Begins:</p>
+            <div className="border border-black h-8"></div>
+          </div>
         </div>
       </div>
 

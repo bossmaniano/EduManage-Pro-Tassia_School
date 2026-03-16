@@ -1,5 +1,19 @@
 import TassiaHeader from "./TassiaHeader";
 
+// Rubric mapping function for grade performance
+function getRubricAndPoints(score) {
+  if (score >= 90 && score <= 99) return { rubric: "EE 1", points: 8 };
+  if (score >= 75 && score <= 89) return { rubric: "EE 2", points: 7 };
+  if (score >= 58 && score <= 74) return { rubric: "ME 1", points: 6 };
+  if (score >= 41 && score <= 57) return { rubric: "ME 2", points: 5 };
+  if (score >= 31 && score <= 40) return { rubric: "AE 1", points: 4 };
+  if (score >= 21 && score <= 30) return { rubric: "AE 2", points: 3 };
+  if (score >= 11 && score <= 20) return { rubric: "BE 1", points: 2 };
+  if (score >= 1 && score <= 10) return { rubric: "BE 2", points: 1 };
+  if (score === 0) return { rubric: "BE 2", points: 0 };
+  return { rubric: "-", points: 0 };
+}
+
 export default function GradePerformanceReport({ 
   students, 
   grades, 
@@ -7,48 +21,62 @@ export default function GradePerformanceReport({
   className, 
   examInstance 
 }) {
+  // Get subject IDs for filtering
+  const subjectIds = subjects.map(s => s.id);
+  
+  // Filter grades to only include subjects in the class's subject list
+  const filteredGrades = grades.filter(g => subjectIds.includes(g.subjectId));
+  
   // Calculate student data with rankings
   const studentData = students.map(student => {
-    const studentGrades = grades.filter(g => g.studentId === student.id);
+    const studentGrades = filteredGrades.filter(g => g.studentId === student.id);
     const scores = {};
-    let total = 0;
+    const points = {};
+    let totalScore = 0;
+    let totalPoints = 0;
     
     subjects.forEach(subject => {
       const grade = studentGrades.find(g => g.subjectId === subject.id);
-      scores[subject.id] = grade?.score || 0;
-      total += grade?.score || 0;
+      const score = grade?.score || 0;
+      const { points: pts } = getRubricAndPoints(score);
+      scores[subject.id] = score;
+      points[subject.id] = pts;
+      totalScore += score;
+      totalPoints += pts;
     });
     
-    const avg = subjects.length > 0 ? Math.round(total / subjects.length) : 0;
+    const avg = subjects.length > 0 ? Math.round(totalScore / subjects.length) : 0;
     
     return {
       ...student,
       scores,
-      total,
+      points,
+      totalScore,
+      totalPoints,
       avg
     };
-  }).sort((a, b) => b.avg - a.avg); // Sort by average descending
+  }).sort((a, b) => b.totalPoints - a.totalPoints); // Sort by total points descending
 
   // Add rankings
   const rankedStudents = studentData.map((s, i) => ({ ...s, rank: i + 1 }));
 
-  // Calculate summary stats
-  const allAvgs = rankedStudents.map(s => s.avg);
-  const averageScore = allAvgs.length > 0 
-    ? Math.round(allAvgs.reduce((a, b) => a + b, 0) / allAvgs.length) 
+  // Calculate summary stats based on points
+  const allTotalPoints = rankedStudents.map(s => s.totalPoints);
+  const averagePoints = allTotalPoints.length > 0 
+    ? Math.round(allTotalPoints.reduce((a, b) => a + b, 0) / allTotalPoints.length) 
     : 0;
-  const passCount = allAvgs.filter(a => a >= 40).length;
-  const passRate = allAvgs.length > 0 
-    ? Math.round((passCount / allAvgs.length) * 100) 
+  const passCount = rankedStudents.filter(s => s.totalPoints >= (subjects.length * 5)).length; // 5 points per subject
+  const passRate = allTotalPoints.length > 0 
+    ? Math.round((passCount / allTotalPoints.length) * 100) 
     : 0;
   const topPerformer = rankedStudents[0]?.name || '-';
   const lowestSubject = subjects.reduce((lowest, subject) => {
-    const subjectGrades = grades.filter(g => g.subjectId === subject.id);
-    const avg = subjectGrades.length > 0
-      ? Math.round(subjectGrades.reduce((sum, g) => sum + g.score, 0) / subjectGrades.length)
+    const subjectGrades = filteredGrades.filter(g => g.subjectId === subject.id);
+    const avgPoints = subjectGrades.length > 0
+      ? Math.round(subjectGrades.reduce((sum, g) => sum + getRubricAndPoints(g.score).points, 0) / subjectGrades.length)
       : 0;
-    if (!lowest || avg < lowest.avg) {
-      return { name: subject.name, avg };
+    if (!lowest || avgPoints < lowest.avgPoints) {
+      return { name: subject.name, avgPoints };
     }
     return lowest;
   }, null);
@@ -81,8 +109,8 @@ export default function GradePerformanceReport({
       {/* Summary Cards */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="border border-black p-3 text-center">
-          <p className="text-xs font-semibold uppercase">Average Score</p>
-          <p className="text-2xl font-bold">{averageScore}%</p>
+          <p className="text-xs font-semibold uppercase">Average Points</p>
+          <p className="text-2xl font-bold">{averagePoints}</p>
         </div>
         <div className="border border-black p-3 text-center">
           <p className="text-xs font-semibold uppercase">Pass Rate</p>
@@ -95,7 +123,7 @@ export default function GradePerformanceReport({
         <div className="border border-black p-3 text-center">
           <p className="text-xs font-semibold uppercase">Lowest Subject</p>
           <p className="text-sm font-bold">{lowestSubject?.name || '-'}</p>
-          <p className="text-xs text-gray-600">({lowestSubject?.avg || 0}%)</p>
+          <p className="text-xs text-gray-600">({lowestSubject?.avgPoints || 0} pts)</p>
         </div>
       </div>
 
@@ -110,8 +138,8 @@ export default function GradePerformanceReport({
                 {getSubjectCode(subject.name)}
               </th>
             ))}
-            <th className="border border-black py-2 px-2 text-center font-bold w-16">Total</th>
-            <th className="border border-black py-2 px-2 text-center font-bold w-16">Avg %</th>
+            <th className="border border-black py-2 px-2 text-center font-bold w-16">Total Pts</th>
+            <th className="border border-black py-2 px-2 text-center font-bold w-16">Total Marks</th>
           </tr>
         </thead>
         <tbody>
@@ -127,11 +155,11 @@ export default function GradePerformanceReport({
               <td className="border border-black py-1 px-2 font-medium">{student.name}</td>
               {subjects.map(subject => (
                 <td key={subject.id} className="border border-black py-1 px-2 text-center">
-                  {student.scores[subject.id]}
+                  {student.points[subject.id]}
                 </td>
               ))}
-              <td className="border border-black py-1 px-2 text-center font-bold">{student.total}</td>
-              <td className="border border-black py-1 px-2 text-center font-bold">{student.avg}%</td>
+              <td className="border border-black py-1 px-2 text-center font-bold">{student.totalPoints}</td>
+              <td className="border border-black py-1 px-2 text-center font-bold">{student.totalScore}</td>
             </tr>
           ))}
         </tbody>
