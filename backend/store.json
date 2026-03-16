@@ -61,6 +61,11 @@
       "id": "sub-5fc2f6b1",
       "name": "Religious Studies",
       "rubric": ""
+    },
+    {
+      "id": "sub-a8c570dd",
+      "name": "literacy",
+      "rubric": ""
     }
   ],
   "grades": [
@@ -129,24 +134,78 @@
       "examInstanceId": "exam-3f43338d",
       "isLocked": true,
       "submittedBy": "u-e09c1bad"
+    },
+    {
+      "id": "62f21c6e-81ca-4b10-80d8-5a81893ebc2b",
+      "studentId": "4cf69c88-c621-4a77-9e02-29d85b0807b6",
+      "subjectId": "sub-002",
+      "score": 61,
+      "comment": "Good performance",
+      "date": "2026-03-16",
+      "examInstanceId": "exam-3f43338d",
+      "isLocked": true,
+      "submittedBy": "u-468cc0fa"
+    },
+    {
+      "id": "5b61c4e9-aefd-4246-9e99-8b10ddd8279a",
+      "studentId": "fb0841d9-47b9-4101-bfe0-ad312f4134c3",
+      "subjectId": "sub-002",
+      "score": 90,
+      "comment": "Exceptional performance",
+      "date": "2026-03-16",
+      "examInstanceId": "exam-3f43338d",
+      "isLocked": true,
+      "submittedBy": "u-468cc0fa"
+    },
+    {
+      "id": "1168941a-c35e-4609-a7ac-6722e74feb5b",
+      "studentId": "5b991fdd-567f-42c6-898b-3f53aabcae6b",
+      "subjectId": "sub-002",
+      "score": 45,
+      "comment": "Fair performance",
+      "date": "2026-03-16",
+      "examInstanceId": "exam-3f43338d",
+      "isLocked": true,
+      "submittedBy": "u-468cc0fa"
+    },
+    {
+      "id": "48a08953-f594-4153-87ac-b7cb9f69140a",
+      "studentId": "1377ad88-ef58-436e-83ac-d9c42c56f1d9",
+      "subjectId": "sub-002",
+      "score": 30,
+      "comment": "Below average",
+      "date": "2026-03-16",
+      "examInstanceId": "exam-3f43338d",
+      "isLocked": true,
+      "submittedBy": "u-468cc0fa"
     }
   ],
   "users": [
     {
       "id": "u-001",
-      "username": "admin123",
-      "passwordHash": "scrypt:32768:8:1$sOXDC3DdFYx1T8uE$3e4e764a9ba4c6152bffed9f4c893326f201324b7e28bfb09f2394902a1e322ffb40272e6838c84211c3e4b7dd5fdd739663b1fa89cfa75a31571fe04727184f",
+      "username": "admin",
+      "passwordHash": "scrypt:32768:8:1$BHUMaa72v7MnOPEw$4fbd8f0e95d4b12834facc6e021df0636d89f24cce4c54019e3c7bf3a2e5766c8d6da7445eff33d1e701fd225630bf65258ea37958875f2f0565ce650dd1718f",
       "role": "Admin",
       "assignedSubjects": [],
       "assignedClasses": []
     },
     {
       "id": "u-002",
-      "username": "teacher_math",
-      "passwordHash": "scrypt:32768:8:1$Pttujz2OhavDbPHz$795401ecb3527639e5b8a481fea173976d63592cb1ec17aec8e2091cd6dd45f03458c024a3e2b8917b17edcb3ddb7be29fb8c2e7966087a1d5076c65a5f17b70",
+      "username": "blaise(maths)",
+      "passwordHash": "scrypt:32768:8:1$rKJQ89qH9tt3Y9j9$7648ea0c3d7f63f7140490111920a155f941239fd5d2a1a743b77a5ff7d650c411c0d175af2a2a544c7732e34ab500b17525ce7dca5333111e3b89b174578b49",
       "role": "Teacher",
       "assignedSubjects": [
-        "sub-001"
+        "sub-001",
+        "sub-005"
+      ],
+      "assignedClasses": [
+        "class-c4376c",
+        "class-d87896",
+        "class-5e6127",
+        "class-963936",
+        "class-42a1cf",
+        "class-2dd46c",
+        "class-eb0511"
       ]
     },
     {
@@ -214,6 +273,25 @@
         "class-2dd46c",
         "class-eb0511"
       ]
+    },
+    {
+      "id": "u-468cc0fa",
+      "username": "duncan",
+      "passwordHash": "scrypt:32768:8:1$7qBSqZpWzvOXk1Pa$921ab8fa05db70a5d65507d70294babff5ab4082f46340294425baee9861d647bd34f3b8308bc2079e1e0b9dcbedcc34722746f92223d8b6b84b5a4c340af125",
+      "role": "Teacher",
+      "assignedSubjects": [
+        "sub-002",
+        "sub-8e64bde2"
+      ],
+      "assignedClasses": [
+        "class-c4376c",
+        "class-d87896",
+        "class-5e6127",
+        "class-963936",
+        "class-42a1cf",
+        "class-2dd46c",
+        "class-eb0511"
+      ]
     }
   ],
   "exam_instances": [
@@ -238,7 +316,9 @@
         "sub-005",
         "sub-75ab6c9f",
         "sub-41df6cf3",
-        "sub-8e64bde2"
+        "sub-8e64bde2",
+        "sub-5fc2f6b1",
+        "sub-a8c570dd"
       ]
     },
     {

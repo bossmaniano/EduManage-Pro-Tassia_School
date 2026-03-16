@@ -4,8 +4,12 @@ import { apiFetch } from "../utils/api";
 import { Icon, Icons, Card, Select, Button, Spinner, RubricBadge, ScoreBar } from "../components/ui";
 import ProgressReportForm from "../components/ProgressReportForm";
 import GradePerformanceReport from "../components/GradePerformanceReport";
+import TassiaHeader from "../components/TassiaHeader";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function ReportsPage({ onToast }) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "Admin";
   const [students, setStudents] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -19,8 +23,11 @@ export default function ReportsPage({ onToast }) {
   const [classReportData, setClassReportData] = useState(null);
   const [loadingReport, setLoadingReport] = useState(false);
   const [activeTab, setActiveTab] = useState("student");
+  const [massPrintReports, setMassPrintReports] = useState([]);
+  const [massPrintLoading, setMassPrintLoading] = useState(false);
   
   const printRef = useRef();
+  const subjectPrintRef = useRef();
 
   useEffect(() => {
     Promise.all([
@@ -43,6 +50,57 @@ export default function ReportsPage({ onToast }) {
     documentTitle: "Tassia School Report",
   });
 
+  const handleSubjectPrint = useReactToPrint({
+    contentRef: subjectPrintRef,
+    documentTitle: "Tassia School Subject Report",
+  });
+
+  const loadMassPrintReports = async () => {
+    if (!selectedClass || !selectedExam) return;
+    setMassPrintLoading(true);
+    try {
+      const [studentsRes, gradesRes] = await Promise.all([
+        apiFetch(`/api/classes/${selectedClass}/students`),
+        apiFetch("/api/grades")
+      ]);
+      
+      if (!studentsRes?.ok || !gradesRes?.ok) throw new Error("Failed to load data");
+      
+      const classStudents = await studentsRes.json();
+      const allGrades = await gradesRes.json();
+      const selectedExamInstance = examInstances.find(e => e.id === selectedExam);
+      const selectedClassData = classes.find(c => c.id === selectedClass);
+      
+      // Filter grades by exam instance
+      const examGrades = allGrades.filter(g => g.examInstanceId === selectedExam);
+      
+      // Load report for each student
+      const reports = [];
+      for (const student of classStudents) {
+        const studentGrades = examGrades.filter(g => g.studentId === student.id).map(g => ({
+          ...g,
+          subjectName: subjects.find(s => s.id === g.subjectId)?.name || "Unknown"
+        }));
+        
+        const totalScore = studentGrades.reduce((sum, g) => sum + (g.score || 0), 0);
+        const avgScore = studentGrades.length > 0 ? Math.round(totalScore / studentGrades.length) : 0;
+        
+        reports.push({
+          student,
+          grades: studentGrades,
+          averageScore: avgScore,
+          class: selectedClassData,
+          examInstance: selectedExamInstance
+        });
+      }
+      
+      setMassPrintReports(reports);
+    } catch (e) { 
+      onToast(e.message, "error"); 
+    }
+    finally { setMassPrintLoading(false); }
+  };
+
   const loadStudentReport = async (id) => {
     if (!id) return;
     setLoadingReport(true);
@@ -59,8 +117,11 @@ export default function ReportsPage({ onToast }) {
     if (!id) return;
     setLoadingReport(true);
     try {
-      const examParam = selectedExam ? `?examId=${selectedExam}` : "";
-      const res = await apiFetch(`/api/reports/subject/${id}${examParam}`);
+      let params = [];
+      if (selectedExam) params.push(`examId=${selectedExam}`);
+      if (selectedClass) params.push(`classId=${selectedClass}`);
+      const queryString = params.length > 0 ? `?${params.join("&")}` : "";
+      const res = await apiFetch(`/api/reports/subject/${id}${queryString}`);
       if (!res || !res.ok) throw new Error("Failed to load report");
       setSubjectReport(await res.json());
     } catch (e) { onToast(e.message, "error"); }
@@ -113,8 +174,8 @@ export default function ReportsPage({ onToast }) {
           { id: "student", label: "Student Report", icon: Icons.students },
           { id: "class", label: "Class Report", icon: Icons.users },
           { id: "subject", label: "Subject Report", icon: Icons.book }
-        ].map(t => (
-          <button key={t.id} onClick={() => { setActiveTab(t.id); setStudentReport(null); setSubjectReport(null); setClassReportData(null); }}
+        ].concat(isAdmin ? [{ id: "massprint", label: "Mass Print", icon: Icons.printer }] : []).map(t => (
+          <button key={t.id} onClick={() => { setActiveTab(t.id); setStudentReport(null); setSubjectReport(null); setClassReportData(null); setMassPrintReports([]); }}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === t.id ? "bg-white shadow-sm text-indigo-600" : "text-gray-500 hover:text-gray-700"}`}>
             <Icon d={t.icon} size={15} />
             {t.label}
@@ -307,7 +368,11 @@ export default function ReportsPage({ onToast }) {
                 <GradePerformanceReport 
                   students={classReportData.students}
                   grades={classReportData.grades}
-                  subjects={subjects}
+                  subjects={
+                    classReportData.class?.subjects?.length > 0
+                      ? subjects.filter(s => classReportData.class.subjects.includes(s.id))
+                      : subjects
+                  }
                   className={classReportData.class}
                   examInstance={classReportData.examInstance}
                 />
@@ -322,7 +387,14 @@ export default function ReportsPage({ onToast }) {
         <div className="space-y-5">
           <Card className="p-5">
             <div className="flex flex-wrap gap-3 items-end">
-              <div className="flex-1 min-w-48">
+              <div className="flex-1 min-w-40">
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Select Class</label>
+                <Select value={selectedClass} onChange={e => { setSelectedClass(e.target.value); setSubjectReport(null); }}>
+                  <option value="">All Classes</option>
+                  {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </Select>
+              </div>
+              <div className="flex-1 min-w-40">
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Select Subject</label>
                 <Select value={selectedSubject} onChange={e => { setSelectedSubject(e.target.value); setSubjectReport(null); }}>
                   <option value="">Choose a subject...</option>
@@ -352,10 +424,16 @@ export default function ReportsPage({ onToast }) {
                     <h2 className="text-xl font-black text-gray-900">{subjectReport.subject.name}</h2>
                     <p className="text-sm text-gray-500">{subjectReport.studentCount} students</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-500">Class Average</p>
-                    <p className="text-4xl font-black text-gray-900">{subjectReport.averageScore}<span className="text-lg text-gray-400">%</span></p>
-                    <RubricBadge score={Math.round(subjectReport.averageScore)} />
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="text-sm text-gray-500">Class Average</p>
+                      <p className="text-4xl font-black text-gray-900">{subjectReport.averageScore}<span className="text-lg text-gray-400">%</span></p>
+                      <RubricBadge score={Math.round(subjectReport.averageScore)} />
+                    </div>
+                    <Button onClick={handleSubjectPrint} className="ml-4">
+                      <Icon d={Icons.printer} size={16} className="mr-2" />
+                      Print
+                    </Button>
                   </div>
                 </div>
               </Card>
@@ -384,6 +462,131 @@ export default function ReportsPage({ onToast }) {
                   </table>
                 </div>
               </Card>
+            </div>
+          )}
+
+          {/* Printable Subject Report */}
+          {subjectReport && !loadingReport && (
+            <div ref={subjectPrintRef} className="hidden print:block">
+              <div className="bg-white p-8 max-w-[210mm] mx-auto" style={{ minHeight: '297mm' }}>
+                <TassiaHeader />
+                <h2 className="text-xl font-bold text-center uppercase mb-2 border-b border-black pb-2">
+                  SUBJECT PERFORMANCE REPORT
+                </h2>
+                <p className="text-center text-sm mb-6">
+                  {subjectReport.subject.name} | {selectedExam ? examInstances.find(e => e.id === selectedExam)?.name : 'All Exams'}
+                </p>
+                
+                <div className="mb-6">
+                  <div className="flex justify-between items-center border border-black p-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Total Students</p>
+                      <p className="text-2xl font-bold">{subjectReport.studentCount}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-500">Class Average</p>
+                      <p className="text-2xl font-bold">{subjectReport.averageScore}%</p>
+                    </div>
+                  </div>
+                </div>
+
+                <table className="w-full border-collapse border border-black text-sm">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="border border-black py-2 px-2 text-left font-bold">Student</th>
+                      <th className="border border-black py-2 px-2 text-center font-bold">Score</th>
+                      <th className="border border-black py-2 px-2 text-center font-bold">Rubric</th>
+                      <th className="border border-black py-2 px-2 text-center font-bold">Points</th>
+                      <th className="border border-black py-2 px-2 text-left font-bold">Comment</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {subjectReport.grades.map(g => (
+                      <tr key={g.id}>
+                        <td className="border border-black py-2 px-2 font-medium">{g.studentName}</td>
+                        <td className="border border-black py-2 px-2 text-center">{g.score}</td>
+                        <td className="border border-black py-2 px-2 text-center">{g.rubric}</td>
+                        <td className="border border-black py-2 px-2 text-center font-bold">{g.points}</td>
+                        <td className="border border-black py-2 px-2 text-sm">{g.comment}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div className="text-center text-xs text-gray-500 mt-8 pt-4 border-t border-gray-300">
+                  <p>Generated by EduManage Pro | Tassia School</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ===================== MASS PRINT (Admin Only) ===================== */}
+      {activeTab === "massprint" && isAdmin && (
+        <div className="space-y-5">
+          <Card className="p-5">
+            <div className="flex flex-wrap gap-3 items-end">
+              <div className="flex-1 min-w-40">
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Select Class</label>
+                <Select value={selectedClass} onChange={e => { setSelectedClass(e.target.value); setMassPrintReports([]); }}>
+                  <option value="">Choose a class...</option>
+                  {classes.map(c => <option key={c.id} value={c.id}>{c.name} ({c.academicYear})</option>)}
+                </Select>
+              </div>
+              <div className="flex-1 min-w-40">
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Exam Instance</label>
+                <Select value={selectedExam} onChange={e => { setSelectedExam(e.target.value); setMassPrintReports([]); }}>
+                  <option value="">Choose exam...</option>
+                  {examInstances.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                </Select>
+              </div>
+              <Button onClick={loadMassPrintReports} disabled={!selectedClass || !selectedExam || massPrintLoading}>
+                {massPrintLoading ? "Loading..." : "Load Reports"}
+              </Button>
+            </div>
+          </Card>
+
+          {massPrintLoading && <Spinner />}
+
+          {massPrintReports.length > 0 && !massPrintLoading && (
+            <div className="space-y-4">
+              <Card className="p-6">
+                <div className="flex flex-wrap items-start justify-between">
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900">Mass Print - Student Reports</h2>
+                    <p className="text-sm text-gray-500">{massPrintReports.length} reports ready to print</p>
+                  </div>
+                  <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700">
+                    <Icon d={Icons.printer} size={16} className="mr-2" />
+                    Print All Reports
+                  </Button>
+                </div>
+                
+                <div className="mt-4 grid grid-cols-4 gap-2">
+                  {massPrintReports.map((r, i) => (
+                    <div key={i} className="bg-gray-50 rounded-lg p-2 text-sm">
+                      <p className="font-medium truncate">{r.student.name}</p>
+                      <p className="text-gray-500 text-xs">{r.averageScore}% avg</p>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Printable Reports */}
+              <div ref={printRef} className="hidden print:block space-y-8">
+                {massPrintReports.map((report, index) => (
+                  <div key={index} className="page-break-after">
+                    <ProgressReportForm 
+                      student={report.student}
+                      grades={report.grades}
+                      subjects={subjects}
+                      examInstance={examInstances.find(e => e.id === selectedExam)}
+                      classes={classes}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
