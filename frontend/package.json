@@ -1,25 +1,25 @@
 {
-  "name": "edumanage-frontend",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite --port 3000",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "lucide-react": "^0.263.1",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^7.13.1",
-    "react-to-print": "^3.3.0"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.0.3",
-    "autoprefixer": "^10.4.14",
-    "postcss": "^8.4.27",
-    "tailwindcss": "^3.3.3",
-    "vite": "^4.4.5"
-  }
+	"name": "edumanage-frontend",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite --port 3000",
+		"build": "vite build",
+		"preview": "vite preview"
+	},
+	"dependencies": {
+		"lucide-react": "^0.263.1",
+		"react": "^18.2.0",
+		"react-dom": "^18.2.0",
+		"react-router-dom": "^7.13.1",
+		"react-to-print": "^3.3.0"
+	},
+	"devDependencies": {
+		"@vitejs/plugin-react": "^4.0.3",
+		"autoprefixer": "^10.4.14",
+		"postcss": "^8.4.27",
+		"tailwindcss": "^3.3.3",
+		"vite": "^4.4.5"
+	}
 }

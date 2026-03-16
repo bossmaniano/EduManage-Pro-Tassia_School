@@ -1,20 +1,37 @@
 import { useState, useEffect } from "react";
 import { apiFetch } from "../utils/api";
+import { useAuth } from "../contexts/AuthContext";
 import { Icon, Icons, Card, Spinner, RubricBadge, ScoreBar, evaluateScore } from "../components/ui";
 
 export default function DashboardPage() {
   const [data, setData] = useState(null);
+  const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
-    apiFetch("/api/dashboard/summary")
-      .then(async (res) => { if (res && res.ok) setData(await res.json()); })
+    Promise.all([
+      apiFetch("/api/dashboard/summary"),
+      apiFetch("/api/subjects")
+    ])
+      .then(async ([dashRes, subRes]) => {
+        if (dashRes?.ok) setData(await dashRes.json());
+        if (subRes?.ok) setSubjects(await subRes.json());
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <Spinner />;
   if (!data) return <div className="text-center text-gray-500 py-20">Could not connect to backend. Make sure Flask is running on port 18080.</div>;
+
+  // For teachers, show only their assigned subjects in subject averages
+  const displaySubjects = user?.role === "Teacher" && user?.assignedSubjects?.length > 0
+    ? (data.subjectAverages || []).filter(sa => {
+        const subject = subjects.find(sub => sub.name === sa.subject);
+        return subject && user.assignedSubjects.includes(subject.id);
+      })
+    : data.subjectAverages || [];
 
   const stats = [
     { label: "Total Students", value: data.totalStudents, icon: Icons.students, color: "bg-indigo-500", bg: "bg-indigo-50", iconColor: "#6366f1" },
@@ -68,9 +85,11 @@ export default function DashboardPage() {
 
         {/* Subject Averages */}
         <Card className="p-6">
-          <h3 className="font-bold text-gray-800 mb-5 text-lg">Subject Averages</h3>
+          <h3 className="font-bold text-gray-800 mb-5 text-lg">
+            {user?.role === "Teacher" ? "My Subjects" : "Subject Averages"}
+          </h3>
           <div className="space-y-3">
-            {data.subjectAverages.map((s) => (
+            {displaySubjects.map((s) => (
               <div key={s.subject}>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="font-medium text-gray-700">{s.subject}</span>

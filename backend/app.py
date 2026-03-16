@@ -6,7 +6,11 @@ RESTful API serving on port 18080 with local store.json persistence
 import json
 import uuid
 import os
-import fcntl
+import sys
+try:
+    import fcntl
+except ImportError:
+    fcntl = None  # Windows doesn't have fcntl
 from datetime import date, datetime, timedelta
 from functools import wraps
 
@@ -21,7 +25,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-i
 # Configure CORS - allow both local development and production URLs
 # Update VERCEL_FRONTEND_URL to your production frontend URL on Vercel
 VERCEL_FRONTEND_URL = os.environ.get("VERCEL_FRONTEND_URL", "")
-ALLOWED_ORIGINS = ["http://localhost:5173", "http://localhost:5174"]
+ALLOWED_ORIGINS = ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"]
 if VERCEL_FRONTEND_URL:
     ALLOWED_ORIGINS.append(VERCEL_FRONTEND_URL)
 
@@ -36,22 +40,29 @@ STORE_PATH = os.path.join(os.path.dirname(__file__), "store.json")
 
 def read_store() -> dict:
     with open(STORE_PATH, "r") as f:
-        fcntl.flock(f, fcntl.LOCK_SH)
-        try:
-            return json.load(f)
-        finally:
-            fcntl.flock(f, fcntl.LOCK_UN)
+        if fcntl:
+            fcntl.flock(f, fcntl.LOCK_SH)
+            try:
+                return json.load(f)
+            finally:
+                fcntl.flock(f, fcntl.LOCK_UN)
+        return json.load(f)
 
 
 def write_store(data: dict) -> None:
     with open(STORE_PATH, "r+") as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
-        try:
+        if fcntl:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            try:
+                f.seek(0)
+                json.dump(data, f, indent=2)
+                f.truncate()
+            finally:
+                fcntl.flock(f, fcntl.LOCK_UN)
+        else:
             f.seek(0)
             json.dump(data, f, indent=2)
             f.truncate()
-        finally:
-            fcntl.flock(f, fcntl.LOCK_UN)
 
 
 # ─────────────────────────────────────────────
@@ -216,15 +227,36 @@ def dashboard():
     grades = store["grades"]
     subjects = store["subjects"]
     classes = store.get("classes", [])
+    
+    # Get current user info for filtering
+    current_user = g.current_user
+    user_role = current_user.get("role", "Admin")
+    assigned_subjects = current_user.get("assignedSubjects", [])
+    assigned_classes = current_user.get("assignedClasses", [])
+    
+    # Filter data based on user's role and assignments
+    if user_role == "Teacher" and assigned_subjects:
+        # Filter grades to only include assigned subjects
+        filtered_grades = [grade for grade in grades if grade.get("subjectId") in assigned_subjects]
+        # Filter students to only those in assigned classes or with grades in assigned subjects
+        student_ids_with_filtered_grades = set(grade.get("studentId") for grade in filtered_grades)
+        filtered_students = [s for s in students if s.get("classId") in assigned_classes or s["id"] in student_ids_with_filtered_grades]
+        # Filter subjects to only assigned subjects
+        filtered_subjects = [s for s in subjects if s["id"] in assigned_subjects]
+    else:
+        # Admin sees all data
+        filtered_grades = grades
+        filtered_students = students
+        filtered_subjects = subjects
 
-    total_students = len(students)
-    total_grades_entered = len(grades)
-    avg_score = round(sum(g["score"] for g in grades) / len(grades), 1) if grades else 0
+    total_students = len(filtered_students)
+    total_grades_entered = len(filtered_grades)
+    avg_score = round(sum(grade["score"] for grade in filtered_grades) / len(filtered_grades), 1) if filtered_grades else 0
 
     # Grade distribution
     distribution = {"EE": 0, "ME": 0, "AE": 0, "BE": 0}
-    for g in grades:
-        ev = evaluate_score(g["score"])
+    for grade in filtered_grades:
+        ev = evaluate_score(grade["score"])
         rubric = ev["rubric"]
         if "EE" in rubric:
             distribution["EE"] += 1
@@ -235,17 +267,17 @@ def dashboard():
         else:
             distribution["BE"] += 1
 
-    # Subject averages
+    # Subject averages (only for assigned subjects if teacher)
     subject_avgs = []
-    for sub in subjects:
-        sub_grades = [g["score"] for g in grades if g["subjectId"] == sub["id"]]
+    for sub in filtered_subjects:
+        sub_grades = [grade["score"] for grade in filtered_grades if grade.get("subjectId") == sub["id"]]
         avg = round(sum(sub_grades) / len(sub_grades), 1) if sub_grades else 0
         subject_avgs.append({"subject": sub["name"], "average": avg, "count": len(sub_grades)})
 
-    # Top performers
+    # Top performers (only from filtered students)
     student_avgs = []
-    for s in students:
-        s_grades = [g["score"] for g in grades if g["studentId"] == s["id"]]
+    for s in filtered_students:
+        s_grades = [grade["score"] for grade in filtered_grades if grade.get("studentId") == s["id"]]
         if s_grades:
             avg = round(sum(s_grades) / len(s_grades), 1)
             # Get class name from classId
@@ -260,7 +292,7 @@ def dashboard():
         "totalStudents": total_students,
         "totalGradesEntered": total_grades_entered,
         "averageScore": avg_score,
-        "totalSubjects": len(subjects),
+        "totalSubjects": len(filtered_subjects),
         "gradeDistribution": distribution,
         "subjectAverages": subject_avgs,
         "topPerformers": top_performers
@@ -884,19 +916,24 @@ def student_report(student_id):
 @login_required
 def subject_report(subject_id):
     exam_id = request.args.get("examId")
+    class_id = request.args.get("classId")
     store = read_store()
     subject = next((s for s in store["subjects"] if s["id"] == subject_id), None)
     if not subject:
         return jsonify({"error": "Subject not found"}), 404
 
+    students_map = {s["id"]: s for s in store["students"]}
+    exam_map = {e["id"]: e for e in store.get("exam-instances", [])}
+    
     grades = [g for g in store["grades"] if g["subjectId"] == subject_id]
     
     # Filter by exam if provided
     if exam_id:
         grades = [g for g in grades if g.get("examInstanceId") == exam_id]
     
-    students_map = {s["id"]: s for s in store["students"]}
-    exam_map = {e["id"]: e for e in store.get("exam-instances", [])}
+    # Filter by class if provided
+    if class_id:
+        grades = [g for g in grades if students_map.get(g["studentId"], {}).get("classId") == class_id]
 
     detailed = []
     for g in grades:
