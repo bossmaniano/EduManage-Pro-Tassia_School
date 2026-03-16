@@ -139,7 +139,7 @@ export default function GradePerformanceReport({
               </th>
             ))}
             <th className="border border-black py-2 px-2 text-center font-bold w-16">Total Pts</th>
-            <th className="border border-black py-2 px-2 text-center font-bold w-16">Total Marks</th>
+            <th className="border border-black py-2 px-2 text-center font-bold w-16">Avg %</th>
           </tr>
         </thead>
         <tbody>
@@ -159,7 +159,7 @@ export default function GradePerformanceReport({
                 </td>
               ))}
               <td className="border border-black py-1 px-2 text-center font-bold">{student.totalPoints}</td>
-              <td className="border border-black py-1 px-2 text-center font-bold">{student.totalScore}</td>
+              <td className="border border-black py-1 px-2 text-center font-bold">{student.avg}%</td>
             </tr>
           ))}
         </tbody>

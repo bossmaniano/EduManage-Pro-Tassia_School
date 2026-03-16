@@ -47,12 +47,6 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
     return subjects.filter(s => cls.subjects.includes(s.id));
   })();
 
-  // Calculate total points based on class subjects
-  const totalPoints = grades.reduce((sum, g) => {
-    const { points } = getRubricAndPoints(g.score || 0);
-    return sum + points;
-  }, 0);
-  
   // Calculate average based on class subjects
   const totalScore = grades.reduce((sum, g) => sum + (g.score || 0), 0);
   const avgScore = classSubjects.length > 0 ? Math.round(totalScore / classSubjects.length) : 0;
