@@ -23,9 +23,12 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # Configure CORS - allow both local development and production URLs
-# Update VERCEL_FRONTEND_URL to your production frontend URL on Vercel
+# Update RENDER_FRONTEND_URL or VERCEL_FRONTEND_URL to your production frontend URL
+RENDER_FRONTEND_URL = os.environ.get("RENDER_FRONTEND_URL", "")
 VERCEL_FRONTEND_URL = os.environ.get("VERCEL_FRONTEND_URL", "")
 ALLOWED_ORIGINS = ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"]
+if RENDER_FRONTEND_URL:
+    ALLOWED_ORIGINS.append(RENDER_FRONTEND_URL)
 if VERCEL_FRONTEND_URL:
     ALLOWED_ORIGINS.append(VERCEL_FRONTEND_URL)
 
