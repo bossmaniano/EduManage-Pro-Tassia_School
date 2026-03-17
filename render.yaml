@@ -23,7 +23,7 @@ services:
     publishDir: frontend/dist
     envVars:
       - key: VITE_API_URL
-        value: https://edumanage-backend.onrender.com
+        value: https://edumanage-pro-tassia-school.onrender.com
 
 databases:
   - name: edumanage-db
