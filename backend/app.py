@@ -180,8 +180,27 @@ def login():
     if not data or not all(k in data for k in ["username", "password"]):
         return jsonify({"error": "username and password are required"}), 400
 
+    # First check store.json for legacy users
     store = read_store()
     user = next((u for u in store.get("users", []) if u["username"] == data["username"]), None)
+    
+    # If not found in store.json, check SQL database
+    if not user:
+        db = SessionLocal()
+        try:
+            db_user = database.get_user_by_username(db, data["username"])
+            if db_user:
+                user = {
+                    "id": db_user.id,
+                    "username": db_user.username,
+                    "passwordHash": db_user.password_hash,
+                    "role": db_user.role,
+                    "assignedSubjects": db_user.assigned_subjects.split(",") if db_user.assigned_subjects else [],
+                    "assignedClasses": db_user.assigned_classes.split(",") if db_user.assigned_classes else []
+                }
+        finally:
+            db.close()
+    
     if not user or not check_password_hash(user["passwordHash"], data["password"]):
         return jsonify({"error": "Invalid credentials"}), 401
 
@@ -449,13 +468,17 @@ def delete_student(student_id):
 @admin_only
 def assign_student_class(student_id):
     data = request.get_json()
-    store = read_store()
-    for student in store.get("students", []):
-        if student["id"] == student_id:
-            student["classId"] = data.get("classId")  # Can be None to unassign
-            write_store(store)
-            return jsonify(student)
-    return jsonify({"error": "Student not found"}), 404
+    db = SessionLocal()
+    try:
+        student = database.get_student_by_id(db, student_id)
+        if not student:
+            return jsonify({"error": "Student not found"}), 404
+        # Update class ID
+        student.class_id = data.get("classId") or None
+        db.commit()
+        return jsonify(student.to_dict())
+    finally:
+        db.close()
 
 
 # ─────────────────────────────────────────────
@@ -854,13 +877,15 @@ def update_user(user_id):
 @app.route("/api/users/<user_id>", methods=["DELETE"])
 @admin_only
 def delete_user(user_id):
-    store = read_store()
-    original = len(store.get("users", []))
-    store["users"] = [u for u in store.get("users", []) if u["id"] != user_id]
-    if len(store["users"]) == original:
-        return jsonify({"error": "User not found"}), 404
-    write_store(store)
-    return jsonify({"message": "User deleted"})
+    db = SessionLocal()
+    try:
+        user = database.get_user_by_id(db, user_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        database.delete_user(db, user_id)
+        return jsonify({"message": "User deleted"})
+    finally:
+        db.close()
 
 
 # ─────────────────────────────────────────────
