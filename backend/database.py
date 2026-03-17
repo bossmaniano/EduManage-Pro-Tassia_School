@@ -1,144 +1,335 @@
+"""
+SQLAlchemy Database Models for EduManage Pro
+Supports both local JSON (fallback) and PostgreSQL (production)
+"""
+
 import os
 import json
-from supabase import create_client, Client
-from datetime import datetime
+from sqlalchemy import create_engine, Column, String, Integer, Boolean, ForeignKey, Text
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
-# Get Supabase credentials from environment
-SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://srtttdzdwchsqgzvmwlg.supabase.co')
-SUPABASE_KEY = os.environ.get('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNydHR0ZHpkd2Noc3FnenZtd2xnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMjgyNDksImV4cCI6MjA4ODYwNDI0OX0.LX9OnqUmVuqoPSA1F7uomE_5Dz6Ooyvqv4K5EU9RzoE')
+Base = declarative_base()
 
-# Initialize Supabase client
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# ==================== MODELS ====================
 
-def get_store():
-    """Get all data from Supabase - simulates the JSON store"""
+class User(Base):
+    __tablename__ = 'users'
+    
+    id = Column(String, primary_key=True)
+    username = Column(String, unique=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    role = Column(String, nullable=False)  # Admin, Teacher
+    assigned_subjects = Column(String, default='')  # Comma-separated list
+    assigned_classes = Column(String, default='')  # Comma-separated list
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'passwordHash': self.password_hash,
+            'role': self.role,
+            'assignedSubjects': self.assigned_subjects.split(',') if self.assigned_subjects else [],
+            'assignedClasses': self.assigned_classes.split(',') if self.assigned_classes else []
+        }
+
+class Subject(Base):
+    __tablename__ = 'subjects'
+    
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False)
+    rubric = Column(String, default='')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'rubric': self.rubric
+        }
+
+class Class(Base):
+    __tablename__ = 'classes'
+    
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False)
+    academic_year = Column(String, default='')
+    subjects = Column(String, default='')  # Comma-separated list
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'academicYear': self.academic_year,
+            'subjects': self.subjects.split(',') if self.subjects else []
+        }
+
+class Student(Base):
+    __tablename__ = 'students'
+    
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False)
+    class_id = Column(String, ForeignKey('classes.id'), default='')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'classId': self.class_id
+        }
+
+class ExamInstance(Base):
+    __tablename__ = 'exam_instances'
+    
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name
+        }
+
+class Grade(Base):
+    __tablename__ = 'grades'
+    
+    id = Column(String, primary_key=True)
+    student_id = Column(String, ForeignKey('students.id'), nullable=False)
+    subject_id = Column(String, ForeignKey('subjects.id'), nullable=False)
+    score = Column(Integer, default=0)
+    comment = Column(String, default='')
+    date = Column(String, default='')
+    exam_instance_id = Column(String, ForeignKey('exam_instances.id'), default='')
+    is_locked = Column(Boolean, default=False)
+    submitted_by = Column(String, default='')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'studentId': self.student_id,
+            'subjectId': self.subject_id,
+            'score': self.score,
+            'comment': self.comment,
+            'date': self.date,
+            'examInstanceId': self.exam_instance_id,
+            'isLocked': self.is_locked,
+            'submittedBy': self.submitted_by
+        }
+
+# ==================== DATABASE CONNECTION ====================
+
+# Get database URL from environment
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+# If no DATABASE_URL, use SQLite for local development
+if not DATABASE_URL:
+    print("WARNING: DATABASE_URL not set. Using SQLite for local development.")
+    SQLALCHEMY_DATABASE_URL = 'sqlite:///edumanage.db'
+else:
+    # Fix for Railway's postgres:// prefix (SQLAlchemy needs postgresql://)
+    SQLALCHEMY_DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+
+# Create engine
+engine = create_engine(SQLALCHEMY_DATABASE_URL, echo=False)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Create tables if they don't exist
+Base.metadata.create_all(bind=engine)
+
+def get_db():
+    """Get database session"""
+    db = SessionLocal()
     try:
-        users = supabase.table('users').select('*').execute()
-        students = supabase.table('students').select('*').execute()
-        subjects = supabase.table('subjects').select('*').execute()
-        grades = supabase.table('grades').select('*').execute()
-        classes = supabase.table('classes').select('*').execute()
-        exam_instances = supabase.table('exam_instances').select('*').execute()
-        
-        return {
-            'users': users.data if users.data else [],
-            'students': students.data if students.data else [],
-            'subjects': subjects.data if subjects.data else [],
-            'grades': grades.data if grades.data else [],
-            'classes': classes.data if classes.data else [],
-            'exam_instances': exam_instances.data if exam_instances.data else []
-        }
-    except Exception as e:
-        print(f"Error fetching from Supabase: {e}")
-        return {
-            'users': [],
-            'students': [],
-            'subjects': [],
-            'grades': [],
-            'classes': [],
-            'exam_instances': []
-        }
+        yield db
+    finally:
+        db.close()
 
-# Users operations
-def get_users():
-    result = supabase.table('users').select('*').execute()
-    return result.data if result.data else []
+# ==================== DATABASE OPERATIONS ====================
 
-def get_user_by_username(username):
-    result = supabase.table('users').select('*').eq('username', username).execute()
-    return result.data[0] if result.data else None
+def init_db():
+    """Initialize database - create all tables"""
+    Base.metadata.create_all(bind=engine)
 
-def create_user(user_data):
-    result = supabase.table('users').insert(user_data).execute()
-    return result.data[0] if result.data else None
+# Users
+def get_users(db):
+    return db.query(User).all()
 
-def update_user(user_id, user_data):
-    result = supabase.table('users').update(user_data).eq('id', user_id).execute()
-    return result.data[0] if result.data else None
+def get_user_by_username(db, username):
+    return db.query(User).filter(User.username == username).first()
 
-def delete_user(user_id):
-    supabase.table('users').delete().eq('id', user_id).execute()
+def get_user_by_id(db, user_id):
+    return db.query(User).filter(User.id == user_id).first()
 
-# Students operations
-def get_students():
-    result = supabase.table('students').select('*').execute()
-    return result.data if result.data else []
+def create_user(db, user_data):
+    user = User(**user_data)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
 
-def get_student_by_id(student_id):
-    result = supabase.table('students').select('*').eq('id', student_id).execute()
-    return result.data[0] if result.data else None
+def update_user(db, user_id, user_data):
+    user = db.query(User).filter(User.id == user_id).first()
+    if user:
+        for key, value in user_data.items():
+            setattr(user, key, value)
+        db.commit()
+        db.refresh(user)
+    return user
 
-def create_student(student_data):
-    result = supabase.table('students').insert(student_data).execute()
-    return result.data[0] if result.data else None
+def delete_user(db, user_id):
+    user = db.query(User).filter(User.id == user_id).first()
+    if user:
+        db.delete(user)
+        db.commit()
 
-def update_student(student_id, student_data):
-    result = supabase.table('students').update(student_data).eq('id', student_id).execute()
-    return result.data[0] if result.data else None
+# Subjects
+def get_subjects(db):
+    return db.query(Subject).all()
 
-def delete_student(student_id):
-    supabase.table('students').delete().eq('id', student_id).execute()
+def get_subject_by_id(db, subject_id):
+    return db.query(Subject).filter(Subject.id == subject_id).first()
 
-# Subjects operations
-def get_subjects():
-    result = supabase.table('subjects').select('*').execute()
-    return result.data if result.data else []
+def create_subject(db, subject_data):
+    subject = Subject(**subject_data)
+    db.add(subject)
+    db.commit()
+    db.refresh(subject)
+    return subject
 
-def create_subject(subject_data):
-    result = supabase.table('subjects').insert(subject_data).execute()
-    return result.data[0] if result.data else None
+def update_subject(db, subject_id, subject_data):
+    subject = db.query(Subject).filter(Subject.id == subject_id).first()
+    if subject:
+        for key, value in subject_data.items():
+            setattr(subject, key, value)
+        db.commit()
+        db.refresh(subject)
+    return subject
 
-def update_subject(subject_id, subject_data):
-    result = supabase.table('subjects').update(subject_data).eq('id', subject_id).execute()
-    return result.data[0] if result.data else None
+def delete_subject(db, subject_id):
+    subject = db.query(Subject).filter(Subject.id == subject_id).first()
+    if subject:
+        db.delete(subject)
+        db.commit()
 
-def delete_subject(subject_id):
-    supabase.table('subjects').delete().eq('id', subject_id).execute()
+# Classes
+def get_classes(db):
+    return db.query(Class).all()
 
-# Grades operations
-def get_grades():
-    result = supabase.table('grades').select('*').execute()
-    return result.data if result.data else []
+def get_class_by_id(db, class_id):
+    return db.query(Class).filter(Class.id == class_id).first()
 
-def create_grade(grade_data):
-    result = supabase.table('grades').insert(grade_data).execute()
-    return result.data[0] if result.data else None
+def create_class(db, class_data):
+    class_obj = Class(**class_data)
+    db.add(class_obj)
+    db.commit()
+    db.refresh(class_obj)
+    return class_obj
 
-def update_grade(grade_id, grade_data):
-    result = supabase.table('grades').update(grade_data).eq('id', grade_id).execute()
-    return result.data[0] if result.data else None
+def update_class(db, class_id, class_data):
+    class_obj = db.query(Class).filter(Class.id == class_id).first()
+    if class_obj:
+        for key, value in class_data.items():
+            setattr(class_obj, key, value)
+        db.commit()
+        db.refresh(class_obj)
+    return class_obj
 
-def delete_grade(grade_id):
-    supabase.table('grades').delete().eq('id', grade_id).execute()
+def delete_class(db, class_id):
+    class_obj = db.query(Class).filter(Class.id == class_id).first()
+    if class_obj:
+        db.delete(class_obj)
+        db.commit()
 
-# Classes operations
-def get_classes():
-    result = supabase.table('classes').select('*').execute()
-    return result.data if result.data else []
+# Students
+def get_students(db):
+    return db.query(Student).all()
 
-def get_class_by_id(class_id):
-    result = supabase.table('classes').select('*').eq('id', class_id).execute()
-    return result.data[0] if result.data else None
+def get_student_by_id(db, student_id):
+    return db.query(Student).filter(Student.id == student_id).first()
 
-def create_class(class_data):
-    result = supabase.table('classes').insert(class_data).execute()
-    return result.data[0] if result.data else None
+def get_students_by_class(db, class_id):
+    return db.query(Student).filter(Student.class_id == class_id).all()
 
-def update_class(class_id, class_data):
-    result = supabase.table('classes').update(class_data).eq('id', class_id).execute()
-    return result.data[0] if result.data else None
+def create_student(db, student_data):
+    student = Student(**student_data)
+    db.add(student)
+    db.commit()
+    db.refresh(student)
+    return student
 
-def delete_class(class_id):
-    supabase.table('classes').delete().eq('id', class_id).execute()
+def update_student(db, student_id, student_data):
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if student:
+        for key, value in student_data.items():
+            setattr(student, key, value)
+        db.commit()
+        db.refresh(student)
+    return student
 
-# Exam instances operations
-def get_exam_instances():
-    result = supabase.table('exam_instances').select('*').execute()
-    return result.data if result.data else []
+def delete_student(db, student_id):
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if student:
+        db.delete(student)
+        db.commit()
 
-def create_exam_instance(exam_data):
-    result = supabase.table('exam_instances').insert(exam_data).execute()
-    return result.data[0] if result.data else None
+# Grades
+def get_grades(db):
+    return db.query(Grade).all()
 
-def delete_exam_instance(exam_id):
-    supabase.table('exam_instances').delete().eq('id', exam_id).execute()
+def get_grade_by_id(db, grade_id):
+    return db.query(Grade).filter(Grade.id == grade_id).first()
+
+def get_grades_by_student(db, student_id):
+    return db.query(Grade).filter(Grade.student_id == student_id).all()
+
+def get_grades_by_subject(db, subject_id):
+    return db.query(Grade).filter(Grade.subject_id == subject_id).all()
+
+def get_grades_by_exam(db, exam_instance_id):
+    return db.query(Grade).filter(Grade.exam_instance_id == exam_instance_id).all()
+
+def get_grades_by_student_and_exam(db, student_id, exam_instance_id):
+    return db.query(Grade).filter(
+        Grade.student_id == student_id,
+        Grade.exam_instance_id == exam_instance_id
+    ).all()
+
+def create_grade(db, grade_data):
+    grade = Grade(**grade_data)
+    db.add(grade)
+    db.commit()
+    db.refresh(grade)
+    return grade
+
+def update_grade(db, grade_id, grade_data):
+    grade = db.query(Grade).filter(Grade.id == grade_id).first()
+    if grade:
+        for key, value in grade_data.items():
+            setattr(grade, key, value)
+        db.commit()
+        db.refresh(grade)
+    return grade
+
+def delete_grade(db, grade_id):
+    grade = db.query(Grade).filter(Grade.id == grade_id).first()
+    if grade:
+        db.delete(grade)
+        db.commit()
+
+# Exam Instances
+def get_exam_instances(db):
+    return db.query(ExamInstance).all()
+
+def get_exam_instance_by_id(db, exam_id):
+    return db.query(ExamInstance).filter(ExamInstance.id == exam_id).first()
+
+def create_exam_instance(db, exam_data):
+    exam = ExamInstance(**exam_data)
+    db.add(exam)
+    db.commit()
+    db.refresh(exam)
+    return exam
+
+def delete_exam_instance(db, exam_id):
+    exam = db.query(ExamInstance).filter(ExamInstance.id == exam_id).first()
+    if exam:
+        db.delete(exam)
+        db.commit()

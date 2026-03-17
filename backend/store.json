@@ -19,6 +19,11 @@
       "id": "4cf69c88-c621-4a77-9e02-29d85b0807b6",
       "name": "ian",
       "classId": "class-c4376c"
+    },
+    {
+      "id": "3ea8cf2b-8183-463d-9d94-41c3283223c0",
+      "name": "ben",
+      "classId": "class-c4376c"
     }
   ],
   "subjects": [
@@ -178,6 +183,17 @@
       "examInstanceId": "exam-3f43338d",
       "isLocked": true,
       "submittedBy": "u-468cc0fa"
+    },
+    {
+      "id": "cbf95727-163c-46bc-bb5a-de71fc80bbdb",
+      "studentId": "1377ad88-ef58-436e-83ac-d9c42c56f1d9",
+      "subjectId": "sub-004",
+      "score": 56,
+      "comment": "Fair performance",
+      "date": "2026-03-17",
+      "examInstanceId": "exam-3f43338d",
+      "isLocked": true,
+      "submittedBy": "u-8a9f795d"
     }
   ],
   "users": [
@@ -206,15 +222,6 @@
         "class-42a1cf",
         "class-2dd46c",
         "class-eb0511"
-      ]
-    },
-    {
-      "id": "u-003",
-      "username": "teacher_eng",
-      "passwordHash": "scrypt:32768:8:1$HisS5SUNGnsZ4Iox$4beb546a23c25dc2a8e18b677d77e4017a8b57c1b837e274ccc4fc3cc56409ede0062f9be1cb198b65fe7c763e61a385757e01260cd2c31d6df6b62143460561",
-      "role": "Teacher",
-      "assignedSubjects": [
-        "sub-002"
       ]
     },
     {
@@ -291,6 +298,26 @@
         "class-42a1cf",
         "class-2dd46c",
         "class-eb0511"
+      ]
+    },
+    {
+      "id": "u-8a9f795d",
+      "username": "ben",
+      "passwordHash": "scrypt:32768:8:1$2mdBbR03ztivxr3P$ee5fe7bdf3cbe26c62326fe2331c7ce5441ae62188baaa3886490207d86ac4c40a41e1ac7000cd5b9fa7607998f4c6f8662e02a9571b954f6375d6a4857adba7",
+      "role": "Teacher",
+      "assignedSubjects": [
+        "sub-004",
+        "sub-005",
+        "sub-75ab6c9f"
+      ],
+      "assignedClasses": [
+        "class-5e6127",
+        "class-963936",
+        "class-42a1cf",
+        "class-2dd46c",
+        "class-eb0511",
+        "class-d87896",
+        "class-c4376c"
       ]
     }
   ],
