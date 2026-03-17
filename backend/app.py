@@ -25,11 +25,8 @@ from database import get_db, get_subjects as db_get_subjects, get_subject_by_id 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-# Configure CORS - allow exact origin for credentials
-FRONTEND_URL = os.environ.get("RENDER_FRONTEND_URL", "https://edumanage-pro-tassia-school-1.onrender.com")
-# Ensure URL has https:// prefix
-if FRONTEND_URL and not FRONTEND_URL.startswith("http"):
-    FRONTEND_URL = "https://" + FRONTEND_URL
+# Configure CORS - hardcoded for Render deployment
+FRONTEND_URL = "https://edumanage-pro-tassia-school-1.onrender.com"
 CORS(app, origins=[FRONTEND_URL, "http://localhost:5173", "http://localhost:5174", "http://localhost:3000"], supports_credentials=True)
 
 # Configure SQLAlchemy database
