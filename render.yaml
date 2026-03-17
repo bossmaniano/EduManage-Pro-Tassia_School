@@ -4,7 +4,7 @@ services:
     type: web
     region: oregon
     buildCommand: cd backend && pip install -r requirements.txt
-    startCommand: gunicorn --bind 0.0.0.0:$PORT app:app
+    startCommand: cd backend && gunicorn --bind 0.0.0.0:$PORT app:app
     envVars:
       - key: DATABASE_URL
         fromDatabase:
