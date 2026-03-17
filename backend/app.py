@@ -27,7 +27,8 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-i
 
 # Configure CORS - hardcoded for Render deployment
 FRONTEND_URL = "https://edumanage-pro-tassia-school-1.onrender.com"
-CORS(app, origins=[FRONTEND_URL, "http://localhost:5173", "http://localhost:5174", "http://localhost:3000"], supports_credentials=True)
+# Use single origin for credentials (not a list)
+CORS(app, origins=FRONTEND_URL, supports_credentials=True)
 
 # Configure SQLAlchemy database
 DATABASE_URL = os.environ.get('DATABASE_URL')
