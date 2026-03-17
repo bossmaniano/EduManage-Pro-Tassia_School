@@ -2,6 +2,12 @@
 // Use VITE_API_URL environment variable for production (e.g., https://your-backend.onrender.com)
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
+// Warn if API URL is not set
+if (!API_BASE_URL && import.meta.env.MODE === 'production') {
+  console.warn('WARNING: VITE_API_URL is not set! API calls may fail in production.');
+}
+console.log('API Base URL:', API_BASE_URL || '(using relative URLs)');
+
 export async function apiFetch(url, options = {}) {
   // Prepend API base URL if set (for production)
   const fullUrl = API_BASE_URL ? `${API_BASE_URL}${url}` : url;
