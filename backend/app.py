@@ -524,31 +524,41 @@ def create_class():
 @admin_only
 def update_class(class_id):
     data = request.get_json()
-    store = read_store()
-    for cls in store.get("classes", []):
-        if cls["id"] == class_id:
-            cls["name"] = data.get("name", cls["name"])
-            cls["academicYear"] = data.get("academicYear", cls.get("academicYear"))
-            if "subjects" in data:
-                cls["subjects"] = data["subjects"]
-            write_store(store)
-            return jsonify(cls)
-    return jsonify({"error": "Class not found"}), 404
+    db = SessionLocal()
+    try:
+        cls = database.get_class_by_id(db, class_id)
+        if not cls:
+            return jsonify({"error": "Class not found"}), 404
+        cls.name = data.get("name", cls.name)
+        cls.academic_year = data.get("academicYear", cls.academic_year)
+        if "subjects" in data:
+            cls.subjects = ",".join(data["subjects"])
+        db.commit()
+        return jsonify(cls.to_dict())
+    finally:
+        db.close()
 
 
 @app.route("/api/classes/<class_id>", methods=["DELETE"])
 @teacher_or_admin
 def delete_class(class_id):
-    store = read_store()
-    # Unlink students from this class instead of deleting them
-    for student in store.get("students", []):
-        if student.get("classId") == class_id:
-            student["classId"] = None
-    # Delete the class
-    classes = store.get("classes", [])
-    store["classes"] = [c for c in classes if c["id"] != class_id]
-    write_store(store)
-    return jsonify({"message": "Class deleted"})
+    db = SessionLocal()
+    try:
+        # First unlink students from this class
+        students = database.get_students(db)
+        for student in students:
+            if student.class_id == class_id:
+                student.class_id = None
+        db.commit()
+        
+        # Delete the class
+        cls = database.get_class_by_id(db, class_id)
+        if not cls:
+            return jsonify({"error": "Class not found"}), 404
+        database.delete_class(db, class_id)
+        return jsonify({"message": "Class deleted"})
+    finally:
+        db.close()
 
 
 @app.route("/api/classes/<class_id>/students", methods=["GET"])
