@@ -47,8 +47,16 @@ CREATE TABLE classes (
 -- Exam instances table
 CREATE TABLE exam_instances (
     id TEXT PRIMARY KEY,
-    name TEXT NOT NULL
+    name TEXT NOT NULL,
+    exam_type TEXT DEFAULT '',
+    term TEXT DEFAULT '',
+    year TEXT DEFAULT ''
 );
+
+-- If upgrading an existing database, run:
+-- ALTER TABLE exam_instances ADD COLUMN exam_type TEXT DEFAULT '';
+-- ALTER TABLE exam_instances ADD COLUMN term TEXT DEFAULT '';
+-- ALTER TABLE exam_instances ADD COLUMN year TEXT DEFAULT '';
 
 -- Grades table
 CREATE TABLE grades (
