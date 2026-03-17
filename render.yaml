@@ -4,7 +4,7 @@ services:
     type: web
     region: oregon
     buildCommand: cd backend && pip install -r requirements.txt
-    startCommand: cd backend && gunicorn --bind 0.0.0.0:$PORT app:app
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --chdir backend app:app
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -12,8 +12,6 @@ services:
           property: connectionString
       - key: SECRET_KEY
         generateValue: true
-      - key: PORT
-        value: "10000"
       - key: RENDER_FRONTEND_URL
         value: https://edumanage-pro-tassia-school-1.onrender.com
 
@@ -25,7 +23,7 @@ services:
     publishDir: frontend/dist
     envVars:
       - key: VITE_API_URL
-        value: https://edumanage-pro-tassia-school.onrender.com
+        value: https://edumanage-pro-tassia-school-1.onrender.com
 
 databases:
   - name: edumanage-db
