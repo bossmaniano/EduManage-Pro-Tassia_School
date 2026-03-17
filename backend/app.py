@@ -28,6 +28,14 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-i
 # Configure CORS - allow all origins for debugging
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
+# Force CORS headers on ALL responses
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    return response
+
 # Configure SQLAlchemy database
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if not DATABASE_URL:
