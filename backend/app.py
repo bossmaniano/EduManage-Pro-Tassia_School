@@ -26,16 +26,9 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # Configure CORS - allow both local development and production URLs
-# Update RENDER_FRONTEND_URL or VERCEL_FRONTEND_URL to your production frontend URL
-RENDER_FRONTEND_URL = os.environ.get("RENDER_FRONTEND_URL", "")
+RENDER_FRONTEND_URL = os.environ.get("RENDER_FRONTEND_URL", "https://edumanage-pro-tassia-school-1.onrender.com")
 VERCEL_FRONTEND_URL = os.environ.get("VERCEL_FRONTEND_URL", "")
-ALLOWED_ORIGINS = ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"]
-if RENDER_FRONTEND_URL:
-    ALLOWED_ORIGINS.append(RENDER_FRONTEND_URL)
-if VERCEL_FRONTEND_URL:
-    ALLOWED_ORIGINS.append(VERCEL_FRONTEND_URL)
-if RENDER_FRONTEND_URL:
-    ALLOWED_ORIGINS.append(RENDER_FRONTEND_URL)
+ALLOWED_ORIGINS = ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "https://edumanage-pro-tassia-school-1.onrender.com"]
 if VERCEL_FRONTEND_URL:
     ALLOWED_ORIGINS.append(VERCEL_FRONTEND_URL)
 
