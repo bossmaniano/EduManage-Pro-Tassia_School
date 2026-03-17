@@ -42,8 +42,8 @@ export function AuthProvider({ children }) {
     setUser(null);
     // Call logout API (ignore errors)
     await apiFetch("/api/auth/logout", { method: "POST" }).catch(() => {});
-    // Use meta refresh to redirect - more reliable than location.replace
-    document.write('<meta http-equiv="refresh" content="0;url=/login">');
+    // Use location.href for full page navigation
+    window.location.href = "/login";
   }, []);
 
   const isAdmin = user?.role === "Admin";
