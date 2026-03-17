@@ -68,12 +68,15 @@ class Student(Base):
     id = Column(String, primary_key=True)
     name = Column(String, nullable=False)
     class_id = Column(String, ForeignKey('classes.id'), default='')
+    email = Column(String, default='')
     
     def to_dict(self):
         return {
             'id': self.id,
             'name': self.name,
-            'classId': self.class_id
+            'classId': self.class_id,
+            'email': self.email,
+            'grade': ''  # Will be populated with class name when returned
         }
 
 class ExamInstance(Base):
@@ -81,11 +84,17 @@ class ExamInstance(Base):
     
     id = Column(String, primary_key=True)
     name = Column(String, nullable=False)
+    exam_type = Column(String, default='')  # e.g., "Mid Term", "End Term", "CAT"
+    term = Column(String, default='')       # e.g., "Term 1", "Term 2", "Term 3"
+    year = Column(String, default='')       # e.g., "2026"
     
     def to_dict(self):
         return {
             'id': self.id,
-            'name': self.name
+            'name': self.name,
+            'examType': self.exam_type,
+            'term': self.term,
+            'year': self.year
         }
 
 class Grade(Base):

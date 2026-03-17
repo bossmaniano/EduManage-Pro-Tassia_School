@@ -71,6 +71,11 @@
       "id": "sub-a8c570dd",
       "name": "literacy",
       "rubric": ""
+    },
+    {
+      "id": "sub-a6339f83",
+      "name": "environmental",
+      "rubric": ""
     }
   ],
   "grades": [
@@ -194,6 +199,61 @@
       "examInstanceId": "exam-3f43338d",
       "isLocked": true,
       "submittedBy": "u-8a9f795d"
+    },
+    {
+      "id": "8a418e9b-44a7-4899-adb4-ced8e0d027e7",
+      "studentId": "3ea8cf2b-8183-463d-9d94-41c3283223c0",
+      "subjectId": "sub-005",
+      "score": 75,
+      "comment": "Very good performance",
+      "date": "2026-03-17",
+      "examInstanceId": "exam-10d4da79",
+      "isLocked": true,
+      "submittedBy": "u-002"
+    },
+    {
+      "id": "1d2604d9-6d2c-44fd-806b-ffa555dea410",
+      "studentId": "4cf69c88-c621-4a77-9e02-29d85b0807b6",
+      "subjectId": "sub-005",
+      "score": 45,
+      "comment": "Fair performance",
+      "date": "2026-03-17",
+      "examInstanceId": "exam-10d4da79",
+      "isLocked": true,
+      "submittedBy": "u-002"
+    },
+    {
+      "id": "ebdf12d1-e27b-474e-9f2e-e04382d4d672",
+      "studentId": "1377ad88-ef58-436e-83ac-d9c42c56f1d9",
+      "subjectId": "sub-005",
+      "score": 54,
+      "comment": "Fair performance",
+      "date": "2026-03-17",
+      "examInstanceId": "exam-10d4da79",
+      "isLocked": true,
+      "submittedBy": "u-002"
+    },
+    {
+      "id": "5e7989c0-d105-4a1e-b701-5af91bc517ec",
+      "studentId": "5b991fdd-567f-42c6-898b-3f53aabcae6b",
+      "subjectId": "sub-005",
+      "score": 22,
+      "comment": "Below average",
+      "date": "2026-03-17",
+      "examInstanceId": "exam-10d4da79",
+      "isLocked": true,
+      "submittedBy": "u-002"
+    },
+    {
+      "id": "51bf5630-1aae-47d6-850f-86046cb6f43b",
+      "studentId": "fb0841d9-47b9-4101-bfe0-ad312f4134c3",
+      "subjectId": "sub-005",
+      "score": 60,
+      "comment": "Good performance",
+      "date": "2026-03-17",
+      "examInstanceId": "exam-10d4da79",
+      "isLocked": true,
+      "submittedBy": "u-002"
     }
   ],
   "users": [
@@ -222,21 +282,6 @@
         "class-42a1cf",
         "class-2dd46c",
         "class-eb0511"
-      ]
-    },
-    {
-      "id": "u-66a33148",
-      "username": "teacher_kiswahili",
-      "passwordHash": "scrypt:32768:8:1$soOvoKdCdmFX2uZ2$aeba0f517a8037dc14746d2f160458919a0744d31dc06dd45b3f0f98f989e3208e44bcd08657ff9665d001d177740e8a5cbb0bb6ef7c7a4a13f4e7e4a22d590f",
-      "role": "Teacher",
-      "assignedSubjects": [
-        "sub-005"
-      ],
-      "assignedClasses": [
-        "class-d77688",
-        "class-004",
-        "class-003",
-        "class-002"
       ]
     },
     {
@@ -328,7 +373,18 @@
     },
     {
       "id": "exam-3f43338d",
-      "name": "END TERM 1 2026"
+      "name": "SERIES 2"
+    },
+    {
+      "id": "exam-10d4da79",
+      "name": "TASSIA SCHOOL"
+    },
+    {
+      "id": "exam-0741280f",
+      "name": "new",
+      "examType": "",
+      "term": "",
+      "year": "2060"
     }
   ],
   "classes": [
