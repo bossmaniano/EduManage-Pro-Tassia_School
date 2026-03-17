@@ -38,9 +38,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
-    await apiFetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    // Clear user state first to prevent any race conditions
     setUser(null);
-    window.location.href = "/login";
+    // Then call logout API (ignore errors)
+    await apiFetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    // Force a full page reload to clear any cached state
+    window.location.replace("/login");
   }, []);
 
   const isAdmin = user?.role === "Admin";
