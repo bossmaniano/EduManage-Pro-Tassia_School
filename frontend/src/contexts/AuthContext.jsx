@@ -1,11 +1,13 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { apiFetch } from "../utils/api";
+import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Rehydrate session from cookie on mount
   useEffect(() => {
@@ -40,8 +42,8 @@ export function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     await apiFetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     setUser(null);
-    window.location.href = "/login";
-  }, []);
+    navigate("/login", { replace: true });
+  }, [navigate]);
 
   const isAdmin = user?.role === "Admin";
   const isTeacher = user?.role === "Teacher";
