@@ -141,8 +141,26 @@ def login_required(f):
         except jwt.InvalidTokenError:
             return jsonify({"error": "Invalid token"}), 401
 
+        # First check store.json for legacy users
         store = read_store()
         user = next((u for u in store.get("users", []) if u["id"] == payload["user_id"]), None)
+        
+        # If not found in store.json, check SQL database
+        if not user:
+            db = SessionLocal()
+            try:
+                db_user = database.get_user_by_id(db, payload["user_id"])
+                if db_user:
+                    user = {
+                        "id": db_user.id,
+                        "username": db_user.username,
+                        "role": db_user.role,
+                        "assignedSubjects": db_user.assigned_subjects.split(",") if db_user.assigned_subjects else [],
+                        "assignedClasses": db_user.assigned_classes.split(",") if db_user.assigned_classes else []
+                    }
+            finally:
+                db.close()
+        
         if not user:
             return jsonify({"error": "User not found"}), 401
         g.current_user = user
