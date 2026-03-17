@@ -25,18 +25,12 @@ from database import get_db, get_subjects as db_get_subjects, get_subject_by_id 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-# Configure CORS - allow exact origin (not wildcard when using credentials)
+# Configure CORS - allow exact origin for credentials
 FRONTEND_URL = os.environ.get("RENDER_FRONTEND_URL", "https://edumanage-pro-tassia-school-1.onrender.com")
+# Ensure URL has https:// prefix
+if FRONTEND_URL and not FRONTEND_URL.startswith("http"):
+    FRONTEND_URL = "https://" + FRONTEND_URL
 CORS(app, origins=[FRONTEND_URL, "http://localhost:5173", "http://localhost:5174", "http://localhost:3000"], supports_credentials=True)
-
-# Force CORS headers on ALL responses
-@app.after_request
-def add_cors_headers(response):
-    frontend = os.environ.get("RENDER_FRONTEND_URL", "https://edumanage-pro-tassia-school-1.onrender.com")
-    response.headers['Access-Control-Allow-Origin'] = frontend
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-    return response
 
 # Configure SQLAlchemy database
 DATABASE_URL = os.environ.get('DATABASE_URL')
