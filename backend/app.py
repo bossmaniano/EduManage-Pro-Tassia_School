@@ -19,6 +19,9 @@ from flask import Flask, jsonify, request, g, make_response
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 
+# Import database functions (use aliases to avoid name conflicts)
+from database import get_db, get_subjects as db_get_subjects, get_subject_by_id as db_get_subject_by_id, create_subject as db_create_subject, update_subject as db_update_subject, delete_subject as db_delete_subject
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
@@ -31,8 +34,29 @@ if RENDER_FRONTEND_URL:
     ALLOWED_ORIGINS.append(RENDER_FRONTEND_URL)
 if VERCEL_FRONTEND_URL:
     ALLOWED_ORIGINS.append(VERCEL_FRONTEND_URL)
+if RENDER_FRONTEND_URL:
+    ALLOWED_ORIGINS.append(RENDER_FRONTEND_URL)
+if VERCEL_FRONTEND_URL:
+    ALLOWED_ORIGINS.append(VERCEL_FRONTEND_URL)
 
 CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True)
+
+# Configure SQLAlchemy database
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if not DATABASE_URL:
+    # Use SQLite for local development if no PostgreSQL URL provided
+    DATABASE_URL = 'sqlite:///edumanage.db'
+else:
+    # Fix for Railway's postgres:// prefix (SQLAlchemy needs postgresql://)
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Import database module
+import database
+from database import init_db, SessionLocal
+init_db()
 
 STORE_PATH = os.path.join(os.path.dirname(__file__), "store.json")
 
@@ -59,12 +83,16 @@ def write_store(data: dict) -> None:
             try:
                 f.seek(0)
                 json.dump(data, f, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
                 f.truncate()
             finally:
                 fcntl.flock(f, fcntl.LOCK_UN)
         else:
             f.seek(0)
             json.dump(data, f, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
             f.truncate()
 
 
@@ -309,16 +337,22 @@ def dashboard():
 @app.route("/api/students", methods=["GET"])
 @login_required
 def get_students():
-    store = read_store()
-    students = store.get("students", [])
-    classes = store.get("classes", [])
-    # Enrich students with class info
-    class_map = {c["id"]: c for c in classes}
-    for student in students:
-        class_id = student.get("classId")
-        if class_id and class_id in class_map:
-            student["class"] = class_map[class_id]
-    return jsonify(students)
+    # Use database instead of JSON store
+    db = SessionLocal()
+    try:
+        students = database.get_students(db)
+        classes = database.get_classes(db)
+        class_map = {c.id: c.to_dict() for c in classes}
+        result = []
+        for student in students:
+            student_dict = student.to_dict()
+            class_id = student_dict.get('classId')
+            if class_id and class_id in class_map:
+                student_dict['class'] = class_map[class_id]
+            result.append(student_dict)
+        return jsonify(result)
+    finally:
+        db.close()
 
 
 @app.route("/api/students", methods=["POST"])
@@ -328,63 +362,92 @@ def create_student():
     if not data or not data.get("name"):
         return jsonify({"error": "name is required"}), 400
 
-    student = {
+    student_data = {
         "id": str(uuid.uuid4()),
         "name": data["name"].strip(),
-        "classId": data.get("classId") or None,
+        "class_id": data.get("classId") or ""
     }
-    store = read_store()
-    store.setdefault("students", []).append(student)
-    write_store(store)
-    # Add class info to response
-    if student.get("classId"):
-        for c in store.get("classes", []):
-            if c["id"] == student["classId"]:
-                student["class"] = c
-                break
-    return jsonify(student), 201
+    
+    db = SessionLocal()
+    try:
+        student = database.create_student(db, student_data)
+        result = student.to_dict()
+        # Add class info to response
+        if result.get("classId"):
+            class_obj = database.get_class_by_id(db, result["classId"])
+            if class_obj:
+                result["class"] = class_obj.to_dict()
+        return jsonify(result), 201
+    finally:
+        db.close()
 
 
 @app.route("/api/students/<student_id>", methods=["GET"])
 @login_required
 def get_student(student_id):
-    store = read_store()
-    student = next((s for s in store["students"] if s["id"] == student_id), None)
-    if not student:
-        return jsonify({"error": "Student not found"}), 404
-    return jsonify(student)
+    db = SessionLocal()
+    try:
+        student = database.get_student_by_id(db, student_id)
+        if not student:
+            return jsonify({"error": "Student not found"}), 404
+        result = student.to_dict()
+        # Add class info
+        if result.get("classId"):
+            class_obj = database.get_class_by_id(db, result["classId"])
+            if class_obj:
+                result["class"] = class_obj.to_dict()
+        return jsonify(result)
+    finally:
+        db.close()
 
 
 @app.route("/api/students/<student_id>", methods=["PUT"])
 @admin_only
 def update_student(student_id):
-    store = read_store()
-    student = next((s for s in store["students"] if s["id"] == student_id), None)
-    if not student:
-        return jsonify({"error": "Student not found"}), 404
-
     data = request.get_json()
-    for field in ["name", "grade", "email"]:
+    
+    # Convert classId to class_id for database
+    update_data = {}
+    for field in ["name"]:
         if field in data:
-            student[field] = data[field].strip()
+            update_data[field] = data[field].strip()
     # Handle classId - can be set to None to unassign
     if "classId" in data:
-        student["classId"] = data["classId"]
-    write_store(store)
-    return jsonify(student)
+        update_data["class_id"] = data["classId"] or ""
+    
+    db = SessionLocal()
+    try:
+        student = database.update_student(db, student_id, update_data)
+        if not student:
+            return jsonify({"error": "Student not found"}), 404
+        result = student.to_dict()
+        # Add class info
+        if result.get("classId"):
+            class_obj = database.get_class_by_id(db, result["classId"])
+            if class_obj:
+                result["class"] = class_obj.to_dict()
+        return jsonify(result)
+    finally:
+        db.close()
 
 
 @app.route("/api/students/<student_id>", methods=["DELETE"])
 @teacher_or_admin
 def delete_student(student_id):
-    store = read_store()
-    original = len(store["students"])
-    store["students"] = [s for s in store["students"] if s["id"] != student_id]
-    store["grades"] = [g for g in store["grades"] if g["studentId"] != student_id]
-    if len(store["students"]) == original:
-        return jsonify({"error": "Student not found"}), 404
-    write_store(store)
-    return jsonify({"message": "Student deleted successfully"})
+    db = SessionLocal()
+    try:
+        student = database.get_student_by_id(db, student_id)
+        if not student:
+            return jsonify({"error": "Student not found"}), 404
+        # Also delete grades for this student
+        grades = database.get_grades_by_student(db, student_id)
+        for grade in grades:
+            database.delete_grade(db, grade.id)
+        # Delete the student
+        database.delete_student(db, student_id)
+        return jsonify({"message": "Student deleted successfully"})
+    finally:
+        db.close()
 
 
 # PUT /api/students/<student_id>/class - Assign student to class
@@ -408,29 +471,36 @@ def assign_student_class(student_id):
 @app.route("/api/classes", methods=["GET"])
 @teacher_or_admin
 def get_classes():
-    store = read_store()
-    classes = store.get("classes", [])
-    students = store.get("students", [])
-    # Add studentCount to each class
-    for cls in classes:
-        cls["studentCount"] = sum(1 for s in students if s.get("classId") == cls["id"])
-    return jsonify(classes)
+    db = SessionLocal()
+    try:
+        classes = database.get_classes(db)
+        students = database.get_students(db)
+        result = []
+        for cls in classes:
+            cls_dict = cls.to_dict()
+            cls_dict["studentCount"] = sum(1 for s in students if s.class_id == cls.id)
+            result.append(cls_dict)
+        return jsonify(result)
+    finally:
+        db.close()
 
 
 @app.route("/api/classes", methods=["POST"])
 @admin_only
 def create_class():
     data = request.get_json()
-    store = read_store()
-    new_class = {
+    class_data = {
         "id": f"class-{uuid.uuid4().hex[:6]}",
         "name": data.get("name"),
-        "academicYear": data.get("academicYear"),
-        "subjects": data.get("subjects", [])  # List of subject IDs
+        "academic_year": data.get("academicYear") or "",
+        "subjects": ",".join(data.get("subjects", []))  # Convert list to comma-separated
     }
-    store.setdefault("classes", []).append(new_class)
-    write_store(store)
-    return jsonify(new_class), 201
+    db = SessionLocal()
+    try:
+        new_class = database.create_class(db, class_data)
+        return jsonify(new_class.to_dict()), 201
+    finally:
+        db.close()
 
 
 @app.route("/api/classes/<class_id>", methods=["PUT"])
@@ -479,8 +549,12 @@ def get_class_students(class_id):
 @app.route("/api/subjects", methods=["GET"])
 @login_required
 def get_subjects():
-    store = read_store()
-    return jsonify(store["subjects"])
+    db = next(get_db())
+    try:
+        subjects = db_get_subjects(db)
+        return jsonify([s.to_dict() for s in subjects])
+    finally:
+        db.close()
 
 
 @app.route("/api/subjects", methods=["POST"])
@@ -493,15 +567,18 @@ def create_subject():
     # Use rubric if provided, otherwise use description as rubric
     rubric = data.get("rubric") or data.get("description") or ""
     
-    subject = {
+    subject_data = {
         "id": f"sub-{str(uuid.uuid4())[:8]}",
         "name": data["name"].strip(),
         "rubric": rubric.strip()
     }
-    store = read_store()
-    store["subjects"].append(subject)
-    write_store(store)
-    return jsonify(subject), 201
+    
+    db = next(get_db())
+    try:
+        subject = db_create_subject(db, subject_data)
+        return jsonify(subject.to_dict()), 201
+    finally:
+        db.close()
 
 
 @app.route("/api/subjects/<subject_id>", methods=["PUT"])
@@ -511,28 +588,30 @@ def update_subject(subject_id):
     if not data or not data.get("name"):
         return jsonify({"error": "name is required"}), 400
     
-    store = read_store()
-    subject = next((s for s in store["subjects"] if s["id"] == subject_id), None)
-    if not subject:
-        return jsonify({"error": "Subject not found"}), 404
+    rubric = (data.get("rubric") or data.get("description") or "").strip()
     
-    subject["name"] = data["name"].strip()
-    subject["rubric"] = (data.get("rubric") or data.get("description") or "").strip()
-    
-    write_store(store)
-    return jsonify(subject)
+    db = next(get_db())
+    try:
+        subject = db_update_subject(db, subject_id, {"name": data["name"].strip(), "rubric": rubric})
+        if not subject:
+            return jsonify({"error": "Subject not found"}), 404
+        return jsonify(subject.to_dict())
+    finally:
+        db.close()
 
 
 @app.route("/api/subjects/<subject_id>", methods=["DELETE"])
 @teacher_or_admin
 def delete_subject(subject_id):
-    store = read_store()
-    original = len(store["subjects"])
-    store["subjects"] = [s for s in store["subjects"] if s["id"] != subject_id]
-    if len(store["subjects"]) == original:
-        return jsonify({"error": "Subject not found"}), 404
-    write_store(store)
-    return jsonify({"message": "Subject deleted"})
+    db = next(get_db())
+    try:
+        subject = db_get_subject_by_id(db, subject_id)
+        if not subject:
+            return jsonify({"error": "Subject not found"}), 404
+        db_delete_subject(db, subject_id)
+        return jsonify({"message": "Subject deleted"})
+    finally:
+        db.close()
 
 
 # ─────────────────────────────────────────────
@@ -708,12 +787,12 @@ def admin_update_grade(grade_id):
 @app.route("/api/users", methods=["GET"])
 @admin_only
 def get_users():
-    store = read_store()
-    users = [
-        {"id": u["id"], "username": u["username"], "role": u["role"], "assignedSubjects": u.get("assignedSubjects", []), "assignedClasses": u.get("assignedClasses", [])}
-        for u in store.get("users", [])
-    ]
-    return jsonify(users)
+    db = SessionLocal()
+    try:
+        users = database.get_users(db)
+        return jsonify([u.to_dict() for u in users])
+    finally:
+        db.close()
 
 
 @app.route("/api/users", methods=["POST"])
@@ -723,21 +802,25 @@ def create_user():
     if not data or not all(k in data for k in ["username", "password", "role"]):
         return jsonify({"error": "username, password, and role are required"}), 400
 
-    store = read_store()
-    if any(u["username"] == data["username"] for u in store.get("users", [])):
-        return jsonify({"error": "Username already exists"}), 409
+    db = SessionLocal()
+    try:
+        # Check if username exists
+        existing = database.get_user_by_username(db, data["username"].strip())
+        if existing:
+            return jsonify({"error": "Username already exists"}), 409
 
-    user = {
-        "id": f"u-{str(uuid.uuid4())[:8]}",
-        "username": data["username"].strip(),
-        "passwordHash": generate_password_hash(data["password"]),
-        "role": data["role"],
-        "assignedSubjects": data.get("assignedSubjects", []),
-        "assignedClasses": data.get("assignedClasses", [])
-    }
-    store.setdefault("users", []).append(user)
-    write_store(store)
-    return jsonify({"id": user["id"], "username": user["username"], "role": user["role"], "assignedSubjects": user["assignedSubjects"], "assignedClasses": user.get("assignedClasses", [])}), 201
+        user_data = {
+            "id": f"u-{str(uuid.uuid4())[:8]}",
+            "username": data["username"].strip(),
+            "password_hash": generate_password_hash(data["password"]),
+            "role": data["role"],
+            "assigned_subjects": ",".join(data.get("assignedSubjects", [])),
+            "assigned_classes": ",".join(data.get("assignedClasses", []))
+        }
+        user = database.create_user(db, user_data)
+        return jsonify(user.to_dict()), 201
+    finally:
+        db.close()
 
 
 @app.route("/api/users/<user_id>", methods=["GET"])
@@ -806,7 +889,10 @@ def create_exam_instance():
 
     instance = {
         "id": f"exam-{str(uuid.uuid4())[:8]}",
-        "name": data["name"].strip()
+        "name": data["name"].strip(),
+        "examType": data.get("examType", ""),
+        "term": data.get("term", ""),
+        "year": data.get("year", "")
     }
     store = read_store()
     store.setdefault("exam_instances", []).append(instance)
@@ -835,6 +921,12 @@ def update_exam_instance(instance_id):
     data = request.get_json()
     if "name" in data:
         instance["name"] = data["name"].strip()
+    if "examType" in data:
+        instance["examType"] = data["examType"]
+    if "term" in data:
+        instance["term"] = data["term"]
+    if "year" in data:
+        instance["year"] = data["year"]
     write_store(store)
     return jsonify(instance)
 
@@ -877,42 +969,73 @@ def evaluate_score_endpoint():
 @login_required
 def student_report(student_id):
     exam_id = request.args.get("examId")
-    store = read_store()
-    student = next((s for s in store["students"] if s["id"] == student_id), None)
-    if not student:
-        return jsonify({"error": "Student not found"}), 404
-
-    grades = [g for g in store["grades"] if g["studentId"] == student_id]
     
-    # Filter by exam if provided
-    if exam_id:
-        grades = [g for g in grades if g.get("examInstanceId") == exam_id]
-    
-    subjects_map = {s["id"]: s for s in store["subjects"]}
-    exam_map = {e["id"]: e for e in store.get("exam-instances", [])}
-
-    detailed = []
-    for g in grades:
-        ev = evaluate_score(g["score"])
-        exam_info = exam_map.get(g.get("examInstanceId"), {})
-        detailed.append({
-            **g,
-            "examName": exam_info.get("name", "Unknown"),
-            "subjectName": subjects_map.get(g["subjectId"], {}).get("name", "Unknown"),
-            "rubric": ev["rubric"],
-            "points": ev["points"]
+    # Use database
+    db = SessionLocal()
+    try:
+        student = database.get_student_by_id(db, student_id)
+        if not student:
+            return jsonify({"error": "Student not found"}), 404
+        
+        grades = database.get_grades_by_student(db, student_id)
+        
+        # Filter by exam if provided
+        if exam_id:
+            grades = [g for g in grades if g.exam_instance_id == exam_id]
+        
+        subjects = database.get_subjects(db)
+        subjects_map = {s.id: s.to_dict() for s in subjects}
+        
+        exams = database.get_exam_instances(db)
+        exam_map = {e.id: e.to_dict() for e in exams}
+        
+        # Get class info for student
+        classes = database.get_classes(db)
+        class_map = {c.id: c.to_dict() for c in classes}
+        student_class = class_map.get(student.class_id, {})
+        
+        detailed = []
+        for g in grades:
+            ev = evaluate_score(g.score)
+            exam_info = exam_map.get(g.exam_instance_id, {})
+            detailed.append({
+                "id": g.id,
+                "studentId": g.student_id,
+                "subjectId": g.subject_id,
+                "examInstanceId": g.exam_instance_id,
+                "score": g.score,
+                "examName": exam_info.get("name", "Unknown"),
+                "subjectName": subjects_map.get(g.subject_id, {}).get("name", "Unknown"),
+                "rubric": ev["rubric"],
+                "points": ev["points"],
+                "comment": g.comment or "",
+                "date": g.date or ""
+            })
+        
+        avg = round(sum(g.score for g in grades) / len(grades), 1) if grades else 0
+        overall_ev = evaluate_score(round(avg)) if grades else None
+        
+        # Build student object with class info
+        student_dict = student.to_dict()
+        student_dict['grade'] = student_class.get('name', '')
+        
+        # Get exam instance details if exam_id is provided
+        exam_instance_dict = None
+        if exam_id:
+            exam = exam_map.get(exam_id)
+            if exam:
+                exam_instance_dict = exam
+        
+        return jsonify({
+            "student": student_dict,
+            "grades": detailed,
+            "averageScore": avg,
+            "overallRubric": overall_ev["rubric"] if overall_ev else "N/A",
+            "overallPoints": overall_ev["points"] if overall_ev else 0,
+            "examInstance": exam_instance_dict
         })
-
-    avg = round(sum(g["score"] for g in grades) / len(grades), 1) if grades else 0
-    overall_ev = evaluate_score(round(avg)) if grades else None
-
-    return jsonify({
-        "student": student,
-        "grades": detailed,
-        "averageScore": avg,
-        "overallRubric": overall_ev["rubric"] if overall_ev else "N/A",
-        "overallPoints": overall_ev["points"] if overall_ev else 0
-    })
+    finally:
+        db.close()
 
 
 @app.route("/api/reports/subject/<subject_id>", methods=["GET"])
@@ -920,46 +1043,59 @@ def student_report(student_id):
 def subject_report(subject_id):
     exam_id = request.args.get("examId")
     class_id = request.args.get("classId")
-    store = read_store()
-    subject = next((s for s in store["subjects"] if s["id"] == subject_id), None)
-    if not subject:
-        return jsonify({"error": "Subject not found"}), 404
+    
+    db = SessionLocal()
+    try:
+        subject = database.get_subject_by_id(db, subject_id)
+        if not subject:
+            return jsonify({"error": "Subject not found"}), 404
 
-    students_map = {s["id"]: s for s in store["students"]}
-    exam_map = {e["id"]: e for e in store.get("exam-instances", [])}
-    
-    grades = [g for g in store["grades"] if g["subjectId"] == subject_id]
-    
-    # Filter by exam if provided
-    if exam_id:
-        grades = [g for g in grades if g.get("examInstanceId") == exam_id]
-    
-    # Filter by class if provided
-    if class_id:
-        grades = [g for g in grades if students_map.get(g["studentId"], {}).get("classId") == class_id]
+        students = database.get_students(db)
+        students_map = {s.id: s.to_dict() for s in students}
+        
+        exams = database.get_exam_instances(db)
+        exam_map = {e.id: e.to_dict() for e in exams}
+        
+        grades = database.get_grades_by_subject(db, subject_id)
+        
+        # Filter by exam if provided
+        if exam_id:
+            grades = [g for g in grades if g.exam_instance_id == exam_id]
+        
+        # Filter by class if provided
+        if class_id:
+            grades = [g for g in grades if students_map.get(g.student_id, {}).get("classId") == class_id]
 
-    detailed = []
-    for g in grades:
-        ev = evaluate_score(g["score"])
-        exam_info = exam_map.get(g.get("examInstanceId"), {})
-        detailed.append({
-            **g,
-            "examName": exam_info.get("name", "Unknown"),
-            "studentName": students_map.get(g["studentId"], {}).get("name", "Unknown"),
-            "rubric": ev["rubric"],
-            "points": ev["points"]
+        detailed = []
+        for g in grades:
+            ev = evaluate_score(g.score)
+            exam_info = exam_map.get(g.exam_instance_id, {})
+            detailed.append({
+                "id": g.id,
+                "studentId": g.student_id,
+                "subjectId": g.subject_id,
+                "examInstanceId": g.exam_instance_id,
+                "score": g.score,
+                "examName": exam_info.get("name", "Unknown"),
+                "studentName": students_map.get(g.student_id, {}).get("name", "Unknown"),
+                "rubric": ev["rubric"],
+                "points": ev["points"],
+                "comment": g.comment or "",
+                "date": g.date or ""
+            })
+
+        avg = round(sum(g.score for g in grades) / len(grades), 1) if grades else 0
+        pass_rate = round(len([g for g in grades if g.score >= 58]) / len(grades) * 100, 1) if grades else 0
+
+        return jsonify({
+            "subject": subject.to_dict(),
+            "grades": detailed,
+            "averageScore": avg,
+            "passRate": pass_rate,
+            "totalStudents": len(grades)
         })
-
-    avg = round(sum(g["score"] for g in grades) / len(grades), 1) if grades else 0
-    pass_rate = round(len([g for g in grades if g["score"] >= 58]) / len(grades) * 100, 1) if grades else 0
-
-    return jsonify({
-        "subject": subject,
-        "grades": detailed,
-        "averageScore": avg,
-        "passRate": pass_rate,
-        "totalStudents": len(grades)
-    })
+    finally:
+        db.close()
 
 
 if __name__ == "__main__":

@@ -1,0 +1,32 @@
+services:
+  # Backend Flask API
+  - name: edumanage-backend
+    type: web
+    region: oregon
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT app:app
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: edumanage-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: RENDER_FRONTEND_URL
+        value: https://edumanage-frontend.onrender.com
+
+  # Frontend React App
+  - name: edumanage-frontend
+    type: static
+    region: oregon
+    buildCommand: cd frontend && npm install && npm run build
+    publishDir: frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://edumanage-backend.onrender.com
+
+databases:
+  - name: edumanage-db
+    region: oregon
+    plan: free
+    postgresMajorVersion: 15
