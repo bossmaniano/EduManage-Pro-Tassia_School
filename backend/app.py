@@ -201,7 +201,10 @@ def login():
             "assignedClasses": user.get("assignedClasses", [])
         }
     }))
-    resp.set_cookie('token', token, httponly=True, samesite='Lax', secure=False, max_age=28800)
+    # For production on Render with HTTPS, use secure cookies
+    # Check if we're in production by checking for RENDER_FRONTEND_URL
+    is_production = bool(os.environ.get('RENDER_FRONTEND_URL'))
+    resp.set_cookie('token', token, httponly=True, samesite='None' if is_production else 'Lax', secure=is_production, max_age=28800)
     return resp
 
 

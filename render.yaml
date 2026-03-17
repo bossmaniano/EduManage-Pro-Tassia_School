@@ -11,7 +11,7 @@ services:
           name: edumanage-db
           property: connectionString
       - key: SECRET_KEY
-        generateValue: true
+        value: edumanage-pro-secret-key-2024
       - key: RENDER_FRONTEND_URL
         value: https://edumanage-pro-tassia-school-1.onrender.com
 
