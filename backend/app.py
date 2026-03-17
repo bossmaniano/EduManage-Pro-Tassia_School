@@ -25,10 +25,12 @@ from database import get_db, get_subjects as db_get_subjects, get_subject_by_id 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-# Configure CORS - hardcoded for Render deployment
-FRONTEND_URL = "https://edumanage-pro-tassia-school-1.onrender.com"
-# Use single origin for credentials (not a list)
-CORS(app, origins=FRONTEND_URL, supports_credentials=True)
+# Configure CORS - using resources format for proper origin handling
+CORS(app, resources={
+    r"/*": {
+        "origins": ["https://edumanage-pro-tassia-school-1.onrender.com"]
+    }
+}, supports_credentials=True)
 
 # Configure SQLAlchemy database
 DATABASE_URL = os.environ.get('DATABASE_URL')
