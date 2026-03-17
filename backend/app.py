@@ -25,14 +25,8 @@ from database import get_db, get_subjects as db_get_subjects, get_subject_by_id 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-# Configure CORS - allow both local development and production URLs
-RENDER_FRONTEND_URL = os.environ.get("RENDER_FRONTEND_URL", "https://edumanage-pro-tassia-school-1.onrender.com")
-VERCEL_FRONTEND_URL = os.environ.get("VERCEL_FRONTEND_URL", "")
-ALLOWED_ORIGINS = ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "https://edumanage-pro-tassia-school-1.onrender.com"]
-if VERCEL_FRONTEND_URL:
-    ALLOWED_ORIGINS.append(VERCEL_FRONTEND_URL)
-
-CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True)
+# Configure CORS - allow all origins for debugging
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 # Configure SQLAlchemy database
 DATABASE_URL = os.environ.get('DATABASE_URL')
