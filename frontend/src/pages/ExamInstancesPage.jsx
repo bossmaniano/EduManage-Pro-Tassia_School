@@ -7,7 +7,7 @@ export default function ExamInstancesPage({ onToast }) {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editExam, setEditExam] = useState(null);
-  const [form, setForm] = useState({ name: "" });
+  const [form, setForm] = useState({ name: "", examType: "", term: "", year: "" });
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -22,8 +22,8 @@ export default function ExamInstancesPage({ onToast }) {
 
   useEffect(() => { load(); }, [load]);
 
-  const openAdd = () => { setEditExam(null); setForm({ name: "" }); setErrors({}); setModalOpen(true); };
-  const openEdit = (ex) => { setEditExam(ex); setForm({ name: ex.name }); setErrors({}); setModalOpen(true); };
+  const openAdd = () => { setEditExam(null); setForm({ name: "", examType: "", term: "", year: "" }); setErrors({}); setModalOpen(true); };
+  const openEdit = (ex) => { setEditExam(ex); setForm({ name: ex.name, examType: ex.examType || "", term: ex.term || "", year: ex.year || "" }); setErrors({}); setModalOpen(true); };
 
   const validate = () => {
     const e = {};
@@ -75,7 +75,7 @@ export default function ExamInstancesPage({ onToast }) {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-100">
-                    {["Exam Name", "ID", "Actions"].map(h => (
+                    {["Exam Name", "Exam Type", "Term", "Year", "ID", "Actions"].map(h => (
                       <th key={h} className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
@@ -91,6 +91,9 @@ export default function ExamInstancesPage({ onToast }) {
                           <span className="font-semibold text-gray-800">{ex.name}</span>
                         </div>
                       </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{ex.examType || '-'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{ex.term || '-'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{ex.year || '-'}</td>
                       <td className="px-6 py-4 text-xs text-gray-400 font-mono">{ex.id}</td>
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
@@ -111,6 +114,15 @@ export default function ExamInstancesPage({ onToast }) {
         <div className="space-y-4">
           <FormField label="Exam Name" error={errors.name}>
             <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Term 1 2024 Exam" />
+          </FormField>
+          <FormField label="Exam Type">
+            <Input value={form.examType} onChange={e => setForm({ ...form, examType: e.target.value })} placeholder="e.g. Mid Term, End Term, CAT" />
+          </FormField>
+          <FormField label="Term">
+            <Input value={form.term} onChange={e => setForm({ ...form, term: e.target.value })} placeholder="e.g. Term 1, Term 2, Term 3" />
+          </FormField>
+          <FormField label="Year">
+            <Input value={form.year} onChange={e => setForm({ ...form, year: e.target.value })} placeholder="e.g. 2026" />
           </FormField>
           <div className="flex gap-3 pt-2">
             <Button variant="secondary" onClick={() => setModalOpen(false)} className="flex-1">Cancel</Button>

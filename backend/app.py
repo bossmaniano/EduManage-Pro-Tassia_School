@@ -19,6 +19,9 @@ from flask import Flask, jsonify, request, g, make_response
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 
+# Import database functions (use aliases to avoid name conflicts)
+from database import get_db, get_subjects as db_get_subjects, get_subject_by_id as db_get_subject_by_id, create_subject as db_create_subject, update_subject as db_update_subject, delete_subject as db_delete_subject
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
@@ -76,12 +79,16 @@ def write_store(data: dict) -> None:
             try:
                 f.seek(0)
                 json.dump(data, f, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
                 f.truncate()
             finally:
                 fcntl.flock(f, fcntl.LOCK_UN)
         else:
             f.seek(0)
             json.dump(data, f, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
             f.truncate()
 
 
@@ -538,8 +545,12 @@ def get_class_students(class_id):
 @app.route("/api/subjects", methods=["GET"])
 @login_required
 def get_subjects():
-    store = read_store()
-    return jsonify(store["subjects"])
+    db = next(get_db())
+    try:
+        subjects = db_get_subjects(db)
+        return jsonify([s.to_dict() for s in subjects])
+    finally:
+        db.close()
 
 
 @app.route("/api/subjects", methods=["POST"])
@@ -552,15 +563,18 @@ def create_subject():
     # Use rubric if provided, otherwise use description as rubric
     rubric = data.get("rubric") or data.get("description") or ""
     
-    subject = {
+    subject_data = {
         "id": f"sub-{str(uuid.uuid4())[:8]}",
         "name": data["name"].strip(),
         "rubric": rubric.strip()
     }
-    store = read_store()
-    store["subjects"].append(subject)
-    write_store(store)
-    return jsonify(subject), 201
+    
+    db = next(get_db())
+    try:
+        subject = db_create_subject(db, subject_data)
+        return jsonify(subject.to_dict()), 201
+    finally:
+        db.close()
 
 
 @app.route("/api/subjects/<subject_id>", methods=["PUT"])
@@ -570,28 +584,30 @@ def update_subject(subject_id):
     if not data or not data.get("name"):
         return jsonify({"error": "name is required"}), 400
     
-    store = read_store()
-    subject = next((s for s in store["subjects"] if s["id"] == subject_id), None)
-    if not subject:
-        return jsonify({"error": "Subject not found"}), 404
+    rubric = (data.get("rubric") or data.get("description") or "").strip()
     
-    subject["name"] = data["name"].strip()
-    subject["rubric"] = (data.get("rubric") or data.get("description") or "").strip()
-    
-    write_store(store)
-    return jsonify(subject)
+    db = next(get_db())
+    try:
+        subject = db_update_subject(db, subject_id, {"name": data["name"].strip(), "rubric": rubric})
+        if not subject:
+            return jsonify({"error": "Subject not found"}), 404
+        return jsonify(subject.to_dict())
+    finally:
+        db.close()
 
 
 @app.route("/api/subjects/<subject_id>", methods=["DELETE"])
 @teacher_or_admin
 def delete_subject(subject_id):
-    store = read_store()
-    original = len(store["subjects"])
-    store["subjects"] = [s for s in store["subjects"] if s["id"] != subject_id]
-    if len(store["subjects"]) == original:
-        return jsonify({"error": "Subject not found"}), 404
-    write_store(store)
-    return jsonify({"message": "Subject deleted"})
+    db = next(get_db())
+    try:
+        subject = db_get_subject_by_id(db, subject_id)
+        if not subject:
+            return jsonify({"error": "Subject not found"}), 404
+        db_delete_subject(db, subject_id)
+        return jsonify({"message": "Subject deleted"})
+    finally:
+        db.close()
 
 
 # ─────────────────────────────────────────────
@@ -869,7 +885,10 @@ def create_exam_instance():
 
     instance = {
         "id": f"exam-{str(uuid.uuid4())[:8]}",
-        "name": data["name"].strip()
+        "name": data["name"].strip(),
+        "examType": data.get("examType", ""),
+        "term": data.get("term", ""),
+        "year": data.get("year", "")
     }
     store = read_store()
     store.setdefault("exam_instances", []).append(instance)
@@ -898,6 +917,12 @@ def update_exam_instance(instance_id):
     data = request.get_json()
     if "name" in data:
         instance["name"] = data["name"].strip()
+    if "examType" in data:
+        instance["examType"] = data["examType"]
+    if "term" in data:
+        instance["term"] = data["term"]
+    if "year" in data:
+        instance["year"] = data["year"]
     write_store(store)
     return jsonify(instance)
 
@@ -960,6 +985,11 @@ def student_report(student_id):
         exams = database.get_exam_instances(db)
         exam_map = {e.id: e.to_dict() for e in exams}
         
+        # Get class info for student
+        classes = database.get_classes(db)
+        class_map = {c.id: c.to_dict() for c in classes}
+        student_class = class_map.get(student.class_id, {})
+        
         detailed = []
         for g in grades:
             ev = evaluate_score(g.score)
@@ -973,18 +1003,32 @@ def student_report(student_id):
                 "examName": exam_info.get("name", "Unknown"),
                 "subjectName": subjects_map.get(g.subject_id, {}).get("name", "Unknown"),
                 "rubric": ev["rubric"],
-                "points": ev["points"]
+                "points": ev["points"],
+                "comment": g.comment or "",
+                "date": g.date or ""
             })
         
         avg = round(sum(g.score for g in grades) / len(grades), 1) if grades else 0
         overall_ev = evaluate_score(round(avg)) if grades else None
         
+        # Build student object with class info
+        student_dict = student.to_dict()
+        student_dict['grade'] = student_class.get('name', '')
+        
+        # Get exam instance details if exam_id is provided
+        exam_instance_dict = None
+        if exam_id:
+            exam = exam_map.get(exam_id)
+            if exam:
+                exam_instance_dict = exam
+        
         return jsonify({
-            "student": student.to_dict(),
+            "student": student_dict,
             "grades": detailed,
             "averageScore": avg,
             "overallRubric": overall_ev["rubric"] if overall_ev else "N/A",
-            "overallPoints": overall_ev["points"] if overall_ev else 0
+            "overallPoints": overall_ev["points"] if overall_ev else 0,
+            "examInstance": exam_instance_dict
         })
     finally:
         db.close()
@@ -1031,7 +1075,9 @@ def subject_report(subject_id):
                 "examName": exam_info.get("name", "Unknown"),
                 "studentName": students_map.get(g.student_id, {}).get("name", "Unknown"),
                 "rubric": ev["rubric"],
-                "points": ev["points"]
+                "points": ev["points"],
+                "comment": g.comment or "",
+                "date": g.date or ""
             })
 
         avg = round(sum(g.score for g in grades) / len(grades), 1) if grades else 0

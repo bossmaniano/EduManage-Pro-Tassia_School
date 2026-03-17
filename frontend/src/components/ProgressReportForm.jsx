@@ -50,6 +50,10 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
   // Calculate average based on class subjects
   const totalScore = grades.reduce((sum, g) => sum + (g.score || 0), 0);
   const avgScore = classSubjects.length > 0 ? Math.round(totalScore / classSubjects.length) : 0;
+  const totalPoints = grades.reduce((sum, g) => {
+    const { points } = getRubricAndPoints(g.score || 0);
+    return sum + points;
+  }, 0);
 
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto" style={{ minHeight: '297mm' }}>
@@ -71,9 +75,9 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
           </tr>
           <tr>
             <td className="py-1 pr-4 font-semibold">Term:</td>
-            <td className="py-1 border-b border-black">{examInstance?.name || 'Term 1'}</td>
+            <td className="py-1 border-b border-black">{examInstance?.term || examInstance?.name || 'Term 1'}</td>
             <td className="py-1 px-4 font-semibold">Year:</td>
-            <td className="py-1 border-b border-black">2026</td>
+            <td className="py-1 border-b border-black">{examInstance?.year || '2026'}</td>
           </tr>
         </tbody>
       </table>
@@ -112,9 +116,10 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
           })}
           {/* Total Row */}
           <tr className="bg-gray-100 font-bold">
-            <td className="border border-black py-2 px-2" colSpan={2}>TOTAL POINTS</td>
+            <td className="border border-black py-2 px-2" colSpan={1}>TOTAL</td>
+            <td className="border border-black py-2 px-2 text-center">{totalScore}</td>
+            <td className="border border-black py-2 px-2 text-center">100</td>
             <td className="border border-black py-2 px-2 text-center">{totalPoints}</td>
-            <td className="border border-black py-2 px-2" colSpan={2}>TOTAL MARKS: {totalScore}</td>
             <td className="border border-black py-2 px-2"></td>
           </tr>
         </tbody>
