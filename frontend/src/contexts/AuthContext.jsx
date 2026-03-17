@@ -38,12 +38,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
-    // Clear user state first to prevent any race conditions
+    // Clear user state first
     setUser(null);
-    // Then call logout API (ignore errors)
+    // Call logout API (ignore errors)
     await apiFetch("/api/auth/logout", { method: "POST" }).catch(() => {});
-    // Force a full page reload to clear any cached state
-    window.location.replace("/login");
+    // Use meta refresh to redirect - more reliable than location.replace
+    document.write('<meta http-equiv="refresh" content="0;url=/login">');
   }, []);
 
   const isAdmin = user?.role === "Admin";
