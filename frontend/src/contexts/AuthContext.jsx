@@ -38,11 +38,31 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
-    // Clear user state first
+    console.log('[Auth] Logout initiated - current user:', user?.username);
+    
+    // CRITICAL: Call logout API FIRST, before clearing state
+    // Clearing state first causes ProtectedLayout to redirect, unmounting component
+    // and potentially canceling the API call
+    try {
+      console.log('[Auth] Calling logout API...');
+      const res = await apiFetch("/api/auth/logout", { method: "POST" });
+      console.log('[Auth] Logout API response:', res?.status, res?.ok);
+      
+      if (!res?.ok) {
+        const errorText = await res?.text();
+        console.error('[Auth] Logout failed:', res?.status, errorText);
+      }
+    } catch (err) {
+      console.error('[Auth] Logout API error:', err);
+    }
+    
+    // Now clear user state after API call completes
+    console.log('[Auth] Clearing user state');
     setUser(null);
-    // Call logout API (ignore errors)
-    await apiFetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    console.log('[Auth] User state cleared to null');
+    
     // Use location.href for full page navigation
+    console.log('[Auth] Redirecting to /login');
     window.location.href = "/login";
   }, []);
 

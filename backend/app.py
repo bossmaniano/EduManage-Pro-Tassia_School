@@ -132,13 +132,18 @@ def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         token = request.cookies.get('token')
+        app.logger.info(f"login_required check - token present: {bool(token)}")
         if not token:
+            app.logger.info("login_required - no token found")
             return jsonify({"error": "Authentication required"}), 401
         try:
             payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+            app.logger.info(f"login_required - token decoded successfully, user_id: {payload.get('user_id')}")
         except jwt.ExpiredSignatureError:
+            app.logger.info("login_required - token expired")
             return jsonify({"error": "Token expired"}), 401
-        except jwt.InvalidTokenError:
+        except jwt.InvalidTokenError as e:
+            app.logger.info(f"login_required - invalid token: {e}")
             return jsonify({"error": "Invalid token"}), 401
 
         # First check store.json for legacy users
@@ -241,14 +246,20 @@ def login():
     # For production on Render with HTTPS, use secure cookies
     # Check if we're in production by checking for RENDER_FRONTEND_URL
     is_production = bool(os.environ.get('RENDER_FRONTEND_URL'))
+    app.logger.info(f"Login success - is_production: {is_production}, setting cookie with samesite={'None' if is_production else 'Lax'}")
     resp.set_cookie('token', token, httponly=True, samesite='None' if is_production else 'Lax', secure=is_production, max_age=28800)
     return resp
 
 
 @app.route("/api/auth/logout", methods=["POST"])
 def logout():
+    # Add diagnostic logging
+    app.logger.info(f"Logout request - cookies: {request.cookies.get('token', 'NOT_FOUND')}")
     resp = make_response(jsonify({"message": "Logged out"}))
-    resp.delete_cookie('token')
+    # Delete cookie with same attributes as when it was set
+    is_production = bool(os.environ.get('RENDER_FRONTEND_URL'))
+    resp.delete_cookie('token', path='/', samesite='None' if is_production else 'Lax', secure=is_production)
+    app.logger.info(f"Logout response - cookies after delete: {resp.cookies}")
     return resp
 
 
@@ -256,6 +267,7 @@ def logout():
 @login_required
 def me():
     u = g.current_user
+    app.logger.info(f"Auth /me - returning user: {u['username']} (id: {u['id']}, role: {u['role']})")
     return jsonify({
         "user": {
             "id": u["id"],

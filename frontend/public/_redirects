@@ -1,2 +1,3 @@
-/api/* 200!
+# SPA Fallback - all routes serve index.html for React Router
+# This must be the last rule
 /* /index.html 200
