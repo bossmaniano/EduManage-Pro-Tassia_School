@@ -130,6 +130,7 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
             <td className="border border-black py-2 px-2" colSpan={1}>TOTAL</td>
             <td className="border border-black py-2 px-2 text-center">{totalScore}</td>
             <td className="border border-black py-2 px-2 text-center">100</td>
+            <td className="border border-black py-2 px-2"></td>
             <td className="border border-black py-2 px-2 text-center">{totalPoints}</td>
             <td className="border border-black py-2 px-2"></td>
           </tr>
