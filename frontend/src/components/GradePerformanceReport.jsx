@@ -21,11 +21,14 @@ export default function GradePerformanceReport({
   className, 
   examInstance 
 }) {
-  // Get subject IDs for filtering
+  // Get all subject IDs from the subjects prop
   const subjectIds = subjects.map(s => s.id);
   
-  // Filter grades to only include subjects in the class's subject list
-  const filteredGrades = grades.filter(g => subjectIds.includes(g.subjectId));
+  // Use all grades - don't filter by subject list since class subjects may not match database
+  const filteredGrades = grades;
+  
+  // Get unique subject IDs from grades that exist
+  const gradeSubjectIds = [...new Set(filteredGrades.map(g => g.subjectId))];
   
   // Calculate student data with rankings
   const studentData = students.map(student => {
@@ -34,18 +37,23 @@ export default function GradePerformanceReport({
     const points = {};
     let totalScore = 0;
     let totalPoints = 0;
+    let subjectCount = 0;
     
-    subjects.forEach(subject => {
-      const grade = studentGrades.find(g => g.subjectId === subject.id);
+    // Only iterate over subjects that have grades
+    gradeSubjectIds.forEach(subjectId => {
+      const grade = studentGrades.find(g => g.subjectId === subjectId);
       const score = grade?.score || 0;
       const { points: pts } = getRubricAndPoints(score);
-      scores[subject.id] = score;
-      points[subject.id] = pts;
-      totalScore += score;
-      totalPoints += pts;
+      scores[subjectId] = score;
+      points[subjectId] = pts;
+      if (score > 0) {
+        totalScore += score;
+        totalPoints += pts;
+        subjectCount++;
+      }
     });
     
-    const avg = subjects.length > 0 ? Math.round(totalScore / subjects.length) : 0;
+    const avg = subjectCount > 0 ? Math.round(totalScore / subjectCount) : 0;
     
     return {
       ...student,

@@ -132,9 +132,9 @@ export default function ReportsPage({ onToast }) {
       // Filter grades by exam instance
       const examGrades = allGrades.filter(g => g.examInstanceId === selectedExam);
       
-      // Get class subjects for filtering
+      // Get class subjects for optional filtering - use all subjects if class has no subjects defined
       const classSubjectIds = selectedClassData?.subjects || [];
-      const classSubjects = subjects.filter(s => classSubjectIds.includes(s.id));
+      const useClassSubjectsFilter = classSubjectIds.length > 0;
       
       // Load report for each student
       const reports = [];
@@ -144,8 +144,10 @@ export default function ReportsPage({ onToast }) {
           subjectName: subjects.find(s => s.id === g.subjectId)?.name || "Unknown"
         }));
         
-        // Filter grades to only include class subjects
-        const filteredStudentGrades = studentGrades.filter(g => classSubjectIds.includes(g.subjectId));
+        // Only filter by class subjects if class has subjects defined
+        const filteredStudentGrades = useClassSubjectsFilter 
+          ? studentGrades.filter(g => classSubjectIds.includes(g.subjectId))
+          : studentGrades;
         
         const totalScore = filteredStudentGrades.reduce((sum, g) => sum + (g.score || 0), 0);
         const avgScore = filteredStudentGrades.length > 0 ? Math.round(totalScore / filteredStudentGrades.length) : 0;

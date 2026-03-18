@@ -284,6 +284,8 @@ def login():
     if not data or not all(k in data for k in ["username", "password"]):
         return jsonify({"error": "username and password are required"}), 400
 
+    app.logger.info(f"Login attempt for username: {data['username']}")
+    
     # First check store.json for legacy users
     store = read_store()
     user = next((u for u in store.get("users", []) if u["username"] == data["username"]), None)
@@ -292,8 +294,10 @@ def login():
     if not user:
         db = SessionLocal()
         try:
+            app.logger.info(f"User not in store.json, checking database for: {data['username']}")
             db_user = database.get_user_by_username(db, data["username"])
             if db_user:
+                app.logger.info(f"Found user in database: {db_user.id}, role: {db_user.role}")
                 user = {
                     "id": db_user.id,
                     "username": db_user.username,
@@ -302,11 +306,15 @@ def login():
                     "assignedSubjects": db_user.assigned_subjects.split(",") if db_user.assigned_subjects else [],
                     "assignedClasses": db_user.assigned_classes.split(",") if db_user.assigned_classes else []
                 }
+            else:
+                app.logger.warning(f"User not found in database either: {data['username']}")
         except Exception as e:
             app.logger.error(f"Database error during login: {e}")
             return jsonify({"error": "Login failed. Please try again."}), 500
         finally:
             db.close()
+    else:
+        app.logger.info(f"Found user in store.json: {user['username']}")
     
     if not user or not check_password_hash(user["passwordHash"], data["password"]):
         return jsonify({"error": "Invalid credentials"}), 401
@@ -781,33 +789,34 @@ def get_grades():
     try:
         grades = database.get_grades(db)
         grades = [g.to_dict() for g in grades]
+        
+        # Enrich with evaluation - use database for students and subjects
+        students = database.get_students(db)
+        subjects = database.get_subjects(db)
+        students_map = {s.id: s.to_dict() for s in students}
+        subjects_map = {s.id: s.to_dict() for s in subjects}
+        enriched = []
+        for g in grades:
+            ev = evaluate_score(g["score"])
+            enriched.append({
+                **g,
+                "rubric": ev["rubric"],
+                "points": ev["points"],
+                "studentName": students_map.get(g["studentId"], {}).get("name", "Unknown"),
+                "subjectName": subjects_map.get(g["subjectId"], {}).get("name", "Unknown"),
+            })
+        
+        # Optional filters
+        student_id = request.args.get("studentId")
+        subject_id = request.args.get("subjectId")
+        if student_id:
+            enriched = [g for g in enriched if g["studentId"] == student_id]
+        if subject_id:
+            enriched = [g for g in enriched if g["subjectId"] == subject_id]
+        
+        return jsonify(enriched)
     finally:
         db.close()
-
-    # Optional filters
-    student_id = request.args.get("studentId")
-    subject_id = request.args.get("subjectId")
-    if student_id:
-        grades = [g for g in grades if g["studentId"] == student_id]
-    if subject_id:
-        grades = [g for g in grades if g["subjectId"] == subject_id]
-
-    # Enrich with evaluation - use database for students and subjects
-    students = database.get_students(db)
-    subjects = database.get_subjects(db)
-    students_map = {s.id: s.to_dict() for s in students}
-    subjects_map = {s.id: s.to_dict() for s in subjects}
-    enriched = []
-    for g in grades:
-        ev = evaluate_score(g["score"])
-        enriched.append({
-            **g,
-            "rubric": ev["rubric"],
-            "points": ev["points"],
-            "studentName": students_map.get(g["studentId"], {}).get("name", "Unknown"),
-            "subjectName": subjects_map.get(g["subjectId"], {}).get("name", "Unknown"),
-        })
-    return jsonify(enriched)
 
 
 @app.route("/api/grades", methods=["POST"])
@@ -1009,10 +1018,14 @@ def create_user():
             "assigned_subjects": ",".join(data.get("assignedSubjects", [])),
             "assigned_classes": ",".join(data.get("assignedClasses", []))
         }
+        app.logger.info(f"Creating user: {user_data['username']} with role: {user_data['role']}")
         user = database.create_user(db, user_data)
+        app.logger.info(f"User created successfully: {user.id}")
         return jsonify(user.to_dict()), 201
     except Exception as e:
         app.logger.error(f"Error creating user: {e}")
+        import traceback
+        app.logger.error(traceback.format_exc())
         return jsonify({"error": "Failed to create user. Please try again."}), 500
     finally:
         db.close()
