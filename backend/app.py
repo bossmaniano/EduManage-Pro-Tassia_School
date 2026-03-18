@@ -80,6 +80,16 @@ with app.app_context():
             for sub in default_subjects:
                 database.create_subject(db, sub)
             app.logger.info("Created default subjects")
+        
+        # Create default student if none exist
+        students = database.get_students(db)
+        if not students:
+            default_student = database.create_student(db, {
+                "id": "student-001",
+                "name": "Test Student",
+                "class_id": ""
+            })
+            app.logger.info("Created default student")
     finally:
         db.close()
 
@@ -772,9 +782,12 @@ def create_grade():
     # Use SQL database instead of JSON store
     db = SessionLocal()
     try:
+        app.logger.info(f"Creating grade for student: {data['studentId']}, subject: {data['subjectId']}, exam: {data['examInstanceId']}")
+        
         # Validate FK references in database
         student = database.get_student_by_id(db, data["studentId"])
         if not student:
+            app.logger.error(f"Student not found: {data['studentId']}")
             return jsonify({"error": "Student not found"}), 404
         subject = database.get_subject_by_id(db, data["subjectId"])
         if not subject:
