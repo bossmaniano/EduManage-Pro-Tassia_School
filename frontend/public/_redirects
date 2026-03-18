@@ -1,3 +1,4 @@
+# Proxy API calls to backend (frontend and backend on same domain)
 # SPA Fallback - all routes serve index.html for React Router
-# This must be the last rule
+/api/* https://edumanage-pro-tassia-school-1.onrender.com/api/* 200!
 /* /index.html 200

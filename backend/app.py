@@ -25,7 +25,7 @@ from database import get_db, get_subjects as db_get_subjects, get_subject_by_id 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-# Configure CORS - allow all origins for development, restrict in production
+# Configure CORS - allow same domain for production
 CORS(app, resources={
     r"/*": {
         "origins": [

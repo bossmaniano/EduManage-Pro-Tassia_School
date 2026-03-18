@@ -1,6 +1,5 @@
-// API Base URL - hardcoded for production to avoid build issues
-// The VITE_ prefix is replaced at build time
-const API_BASE_URL = 'https://edumanage-backend.onrender.com';
+// API Base URL - use relative URLs (frontend and backend on same domain)
+const API_BASE_URL = '';
 
 // Warn if API URL is not set
 if (!API_BASE_URL && import.meta.env.MODE === 'production') {
