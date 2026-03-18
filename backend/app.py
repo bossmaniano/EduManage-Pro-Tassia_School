@@ -735,31 +735,38 @@ def create_grade():
     except (ValueError, TypeError) as e:
         return jsonify({"error": str(e)}), 400
 
-    store = read_store()
+    # Use SQL database instead of JSON store
+    db = SessionLocal()
+    try:
+        # Validate FK references in database
+        student = database.get_student_by_id(db, data["studentId"])
+        if not student:
+            return jsonify({"error": "Student not found"}), 404
+        subject = database.get_subject_by_id(db, data["subjectId"])
+        if not subject:
+            return jsonify({"error": "Subject not found"}), 404
+        
+        # Get exam instance
+        from database import get_exam_instance_by_id
+        exam = get_exam_instance_by_id(db, data["examInstanceId"])
+        if not exam:
+            return jsonify({"error": "Exam instance not found"}), 404
 
-    # Validate FK references
-    if not any(s["id"] == data["studentId"] for s in store["students"]):
-        return jsonify({"error": "Student not found"}), 404
-    if not any(s["id"] == data["subjectId"] for s in store["subjects"]):
-        return jsonify({"error": "Subject not found"}), 404
-    if not any(e["id"] == data["examInstanceId"] for e in store.get("exam_instances", [])):
-        return jsonify({"error": "Exam instance not found"}), 404
-
-    grade = {
-        "id": str(uuid.uuid4()),
-        "studentId": data["studentId"],
-        "subjectId": data["subjectId"],
-        "score": score,
-        "comment": ev["comment"],
-        "date": data.get("date", str(date.today())),
-        "examInstanceId": data["examInstanceId"],
-        "isLocked": True,
-        "submittedBy": current_user["id"]
-    }
-    store["grades"].append(grade)
-    write_store(store)
-
-    return jsonify({**grade, "rubric": ev["rubric"], "points": ev["points"]}), 201
+        grade_data = {
+            "id": str(uuid.uuid4()),
+            "student_id": data["studentId"],
+            "subject_id": data["subjectId"],
+            "score": score,
+            "comment": ev["comment"],
+            "date": data.get("date", str(date.today())),
+            "exam_instance_id": data["examInstanceId"],
+            "is_locked": True,
+            "submitted_by": current_user["id"]
+        }
+        grade = database.create_grade(db, grade_data)
+        return jsonify({**grade.to_dict(), "rubric": ev["rubric"], "points": ev["points"]}), 201
+    finally:
+        db.close()
 
 
 @app.route("/api/grades/<grade_id>", methods=["PUT"])
