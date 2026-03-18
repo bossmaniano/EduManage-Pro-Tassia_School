@@ -296,11 +296,21 @@ def health():
 @app.route("/api/dashboard", methods=["GET"])
 @login_required
 def dashboard():
-    store = read_store()
-    students = store["students"]
-    grades = store["grades"]
-    subjects = store["subjects"]
-    classes = store.get("classes", [])
+    # Use SQL database instead of JSON store
+    db = SessionLocal()
+    try:
+        students = database.get_students(db)
+        grades = database.get_grades(db)
+        subjects = database.get_subjects(db)
+        classes = database.get_classes(db)
+        
+        # Convert to dict format for consistent processing
+        students = [s.to_dict() for s in students]
+        grades = [g.to_dict() for g in grades]
+        subjects = [s.to_dict() for s in subjects]
+        classes = [c.to_dict() for c in classes]
+    finally:
+        db.close()
     
     # Get current user info for filtering
     current_user = g.current_user
