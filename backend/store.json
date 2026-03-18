@@ -76,6 +76,11 @@
       "id": "sub-a6339f83",
       "name": "environmental",
       "rubric": ""
+    },
+    {
+      "id": "sub-french",
+      "name": "French",
+      "rubric": "French Language Rubric"
     }
   ],
   "grades": [
