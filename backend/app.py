@@ -59,14 +59,27 @@ init_db()
 with app.app_context():
     db = SessionLocal()
     try:
+        # Create default exam instance if none exists
         exams = database.get_exam_instances(db)
         if not exams:
-            # Create default exam instance
             exam = database.create_exam_instance(db, {
                 "id": "exam-001",
                 "name": "Term 1 Final Exam, 2025"
             })
             app.logger.info("Created default exam instance")
+        
+        # Create default subjects if none exist
+        subjects = database.get_subjects(db)
+        if not subjects:
+            default_subjects = [
+                {"id": "sub-001", "name": "Mathematics", "rubric": "Standard Math Rubric"},
+                {"id": "sub-002", "name": "English", "rubric": "Language Arts Rubric"},
+                {"id": "sub-004", "name": "Kiswahili", "rubric": ""},
+                {"id": "sub-005", "name": "Integrated Science", "rubric": ""}
+            ]
+            for sub in default_subjects:
+                database.create_subject(db, sub)
+            app.logger.info("Created default subjects")
     finally:
         db.close()
 
