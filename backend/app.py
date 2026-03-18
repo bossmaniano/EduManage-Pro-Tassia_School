@@ -17,7 +17,11 @@ from functools import wraps
 import jwt
 from flask import Flask, jsonify, request, g, make_response
 from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+
+# Initialize Flask-SQLAlchemy
+db = SQLAlchemy()
 
 # Import database functions (use aliases to avoid name conflicts)
 from database import get_db, get_subjects as db_get_subjects, get_subject_by_id as db_get_subject_by_id, create_subject as db_create_subject, update_subject as db_update_subject, delete_subject as db_delete_subject
@@ -50,26 +54,33 @@ else:
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Import database module
+# Initialize Flask-SQLAlchemy with the app
+db.init_app(app)
+
+# Import database module for models
 import database
-from database import init_db, SessionLocal
-init_db()
+from database import SessionLocal, Base
+
+# Create all database tables using Flask-SQLAlchemy
+with app.app_context():
+    # Use the Base from database.py to create tables since models are there
+    Base.metadata.create_all(bind=db.engine)
 
 # Ensure exam instances exist in database
 with app.app_context():
-    db = SessionLocal()
     try:
         # Create default exam instance if none exists
-        exams = database.get_exam_instances(db)
+        exams = database.get_exam_instances(db.session)
         if not exams:
-            exam = database.create_exam_instance(db, {
+            exam = database.create_exam_instance(db.session, {
                 "id": "exam-001",
                 "name": "Term 1 Final Exam, 2025"
             })
+            db.session.commit()
             app.logger.info("Created default exam instance")
         
         # Create default subjects if none exist
-        subjects = database.get_subjects(db)
+        subjects = database.get_subjects(db.session)
         if not subjects:
             default_subjects = [
                 {"id": "sub-001", "name": "Mathematics", "rubric": "Standard Math Rubric"},
@@ -78,20 +89,23 @@ with app.app_context():
                 {"id": "sub-005", "name": "Integrated Science", "rubric": ""}
             ]
             for sub in default_subjects:
-                database.create_subject(db, sub)
+                database.create_subject(db.session, sub)
+            db.session.commit()
             app.logger.info("Created default subjects")
         
         # Create default student if none exist
-        students = database.get_students(db)
+        students = database.get_students(db.session)
         if not students:
-            default_student = database.create_student(db, {
+            default_student = database.create_student(db.session, {
                 "id": "student-001",
                 "name": "Test Student",
                 "class_id": ""
             })
+            db.session.commit()
             app.logger.info("Created default student")
-    finally:
-        db.close()
+    except Exception as e:
+        app.logger.error(f"Error initializing database: {e}")
+        db.session.rollback()
 
 STORE_PATH = os.path.join(os.path.dirname(__file__), "store.json")
 
@@ -779,23 +793,22 @@ def create_grade():
     except (ValueError, TypeError) as e:
         return jsonify({"error": str(e)}), 400
 
-    # Use SQL database instead of JSON store
-    db = SessionLocal()
+    # Use Flask-SQLAlchemy db.session
     try:
         app.logger.info(f"Creating grade for student: {data['studentId']}, subject: {data['subjectId']}, exam: {data['examInstanceId']}")
         
         # Validate FK references in database
-        student = database.get_student_by_id(db, data["studentId"])
+        student = database.get_student_by_id(db.session, data["studentId"])
         if not student:
             app.logger.error(f"Student not found: {data['studentId']}")
             return jsonify({"error": "Student not found"}), 404
-        subject = database.get_subject_by_id(db, data["subjectId"])
+        subject = database.get_subject_by_id(db.session, data["subjectId"])
         if not subject:
             return jsonify({"error": "Subject not found"}), 404
         
         # Get exam instance
         from database import get_exam_instance_by_id
-        exam = get_exam_instance_by_id(db, data["examInstanceId"])
+        exam = get_exam_instance_by_id(db.session, data["examInstanceId"])
         if not exam:
             return jsonify({"error": "Exam instance not found"}), 404
 
@@ -810,10 +823,13 @@ def create_grade():
             "is_locked": True,
             "submitted_by": current_user["id"]
         }
-        grade = database.create_grade(db, grade_data)
+        grade = database.create_grade(db.session, grade_data)
+        db.session.commit()
         return jsonify({**grade.to_dict(), "rubric": ev["rubric"], "points": ev["points"]}), 201
-    finally:
-        db.close()
+    except Exception as e:
+        app.logger.error(f"Error creating grade: {e}")
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/grades/<grade_id>", methods=["PUT"])
