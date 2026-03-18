@@ -69,6 +69,7 @@ class Student(Base):
     name = Column(String, nullable=False)
     class_id = Column(String, ForeignKey('classes.id'), default='')
     email = Column(String, default='')
+    absent_days = Column(Integer, default=0)
     
     def to_dict(self):
         return {
@@ -76,6 +77,7 @@ class Student(Base):
             'name': self.name,
             'classId': self.class_id,
             'email': self.email,
+            'absentDays': self.absent_days,
             'grade': ''  # Will be populated with class name when returned
         }
 
