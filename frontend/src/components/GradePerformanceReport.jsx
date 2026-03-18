@@ -65,11 +65,22 @@ export default function GradePerformanceReport({
   const averagePoints = allTotalPoints.length > 0 
     ? Math.round(allTotalPoints.reduce((a, b) => a + b, 0) / allTotalPoints.length) 
     : 0;
-  const passCount = rankedStudents.filter(s => s.totalPoints >= (subjects.length * 5)).length; // 5 points per subject
-  const passRate = allTotalPoints.length > 0 
-    ? Math.round((passCount / allTotalPoints.length) * 100) 
-    : 0;
-  const topPerformer = rankedStudents[0]?.name || '-';
+  
+  // Total students who sat for the exam (students with at least one grade)
+  const totalStudents = rankedStudents.filter(s => s.totalPoints > 0).length;
+  
+  // Find highest performing subject (highest average points)
+  const highestSubject = subjects.reduce((highest, subject) => {
+    const subjectGrades = filteredGrades.filter(g => g.subjectId === subject.id && g.score > 0);
+    const avgPoints = subjectGrades.length > 0
+      ? Math.round(subjectGrades.reduce((sum, g) => sum + getRubricAndPoints(g.score).points, 0) / subjectGrades.length)
+      : 0;
+    if (!highest || avgPoints > highest.avgPoints) {
+      return { name: subject.name, avgPoints };
+    }
+    return highest;
+  }, null);
+  
   const lowestSubject = subjects.reduce((lowest, subject) => {
     const subjectGrades = filteredGrades.filter(g => g.subjectId === subject.id);
     const avgPoints = subjectGrades.length > 0
@@ -113,12 +124,12 @@ export default function GradePerformanceReport({
           <p className="text-2xl font-bold">{averagePoints}</p>
         </div>
         <div className="border border-black p-3 text-center">
-          <p className="text-xs font-semibold uppercase">Pass Rate</p>
-          <p className="text-2xl font-bold">{passRate}%</p>
+          <p className="text-xs font-semibold uppercase">Total Students</p>
+          <p className="text-2xl font-bold">{totalStudents}</p>
         </div>
         <div className="border border-black p-3 text-center">
-          <p className="text-xs font-semibold uppercase">Top Performer</p>
-          <p className="text-sm font-bold">{topPerformer}</p>
+          <p className="text-xs font-semibold uppercase">Highest Subject</p>
+          <p className="text-sm font-bold">{highestSubject?.name || '-'} ({highestSubject?.avgPoints || 0} pts)</p>
         </div>
         <div className="border border-black p-3 text-center">
           <p className="text-xs font-semibold uppercase">Lowest Subject</p>
@@ -164,6 +175,14 @@ export default function GradePerformanceReport({
           ))}
         </tbody>
       </table>
+
+      {/* Signature Section */}
+      <div className="mt-8 pt-4 border-t border-gray-300">
+        <p className="font-semibold">
+          Class Teacher: ____________________
+          <span className="ml-8">Sign: ____________________</span>
+        </p>
+      </div>
 
       {/* Print Footer */}
       <div className="text-center text-xs text-gray-500 mt-8 pt-4 border-t border-gray-300">
