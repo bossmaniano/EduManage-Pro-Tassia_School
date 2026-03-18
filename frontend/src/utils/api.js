@@ -11,6 +11,7 @@ console.log('API Base URL:', API_BASE_URL || '(using relative URLs)');
 export async function apiFetch(url, options = {}) {
   // Prepend API base URL if set (for production)
   const fullUrl = API_BASE_URL ? `${API_BASE_URL}${url}` : url;
+  console.log(`[API] ${options.method || 'GET'} ${fullUrl}`);
   
   const res = await fetch(fullUrl, {
     ...options,
