@@ -51,7 +51,8 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
   const frenchSubject = subjects?.find(s => s.name === 'French');
   const frenchGrade = frenchSubject ? grades?.find(g => g.subjectId === frenchSubject.id) : null;
   const frenchScore = frenchGrade?.score || 0;
-  const { rubric: frenchRubric, points: frenchPoints } = getRubricAndPoints(frenchScore);
+  const hasFrenchScore = frenchGrade && frenchGrade.score > 0;
+  const { rubric: frenchRubric, points: frenchPoints } = hasFrenchScore ? getRubricAndPoints(frenchScore) : { rubric: '', points: 0 };
 
   // Calculate average based on class subjects
   const totalScore = grades.reduce((sum, g) => sum + (g.score || 0), 0);
@@ -136,11 +137,11 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
         <div className="mb-6 border border-black p-3 bg-gray-50">
           <div className="flex items-center gap-4">
             <span className="font-semibold w-20">French:</span>
-            <span className="w-16 text-center border-b border-black">{frenchScore}</span>
+            <span className="w-16 text-center border-b border-black">{hasFrenchScore ? frenchScore : ''}</span>
             <span className="font-semibold w-16 ml-4">Rubric:</span>
             <span className="w-20 text-center border-b border-black">{frenchRubric}</span>
             <span className="font-semibold w-16 ml-4">Points:</span>
-            <span className="w-12 text-center border-b border-black">{frenchPoints}</span>
+            <span className="w-12 text-center border-b border-black">{hasFrenchScore ? frenchPoints : ''}</span>
           </div>
         </div>
       )}
