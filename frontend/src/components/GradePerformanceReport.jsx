@@ -103,7 +103,7 @@ export default function GradePerformanceReport({
       </h2>
       
       <p className="text-center text-sm mb-6">
-        {className?.name || 'All Grades'} | {examInstance?.name || 'Term 1'} | 2026
+        {className?.name || 'All Grades'} | {examInstance?.name || 'Term 1'} | {examInstance?.year || '2026'}
       </p>
 
       {/* Summary Cards */}
