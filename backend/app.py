@@ -104,13 +104,17 @@ with app.app_context():
             # Ensure French subject exists
             french_exists = any(s.name == "French" for s in subjects)
             if not french_exists:
-                french_subject = database.create_subject(db.session, {
-                    "id": "sub-french",
-                    "name": "French",
-                    "rubric": "French Language Rubric"
-                })
-                db.session.commit()
-                app.logger.info("Added French subject")
+                try:
+                    french_subject = database.create_subject(db.session, {
+                        "id": "sub-french",
+                        "name": "French",
+                        "rubric": "French Language Rubric"
+                    })
+                    db.session.commit()
+                    app.logger.info("Added French subject")
+                except Exception as e:
+                    db.session.rollback()
+                    app.logger.warning(f"French subject may already exist: {e}")
         
         # Create default student if none exist
         students = database.get_students(db.session)
