@@ -1015,8 +1015,9 @@ def delete_user(user_id):
 @app.route("/api/exam-instances", methods=["GET"])
 @teacher_or_admin
 def get_exam_instances():
-    store = read_store()
-    return jsonify(store.get("exam_instances", []))
+    # Use database instead of JSON store
+    exams = database.get_exam_instances(db)
+    return jsonify([e.to_dict() for e in exams])
 
 
 @app.route("/api/exam-instances", methods=["POST"])
@@ -1026,17 +1027,16 @@ def create_exam_instance():
     if not data or "name" not in data:
         return jsonify({"error": "name is required"}), 400
 
-    instance = {
+    # Use database instead of JSON store
+    exam_data = {
         "id": f"exam-{str(uuid.uuid4())[:8]}",
         "name": data["name"].strip(),
-        "examType": data.get("examType", ""),
+        "exam_type": data.get("examType", ""),
         "term": data.get("term", ""),
         "year": data.get("year", "")
     }
-    store = read_store()
-    store.setdefault("exam_instances", []).append(instance)
-    write_store(store)
-    return jsonify(instance), 201
+    exam = database.create_exam_instance(db, exam_data)
+    return jsonify(exam.to_dict()), 201
 
 
 @app.route("/api/exam-instances/<instance_id>", methods=["GET"])
@@ -1052,33 +1052,33 @@ def get_exam_instance(instance_id):
 @app.route("/api/exam-instances/<instance_id>", methods=["PUT"])
 @admin_only
 def update_exam_instance(instance_id):
-    store = read_store()
-    instance = next((e for e in store.get("exam_instances", []) if e["id"] == instance_id), None)
+    # Use database instead of JSON store
+    instance = database.get_exam_instance_by_id(db, instance_id)
     if not instance:
         return jsonify({"error": "Exam instance not found"}), 404
-
+    
     data = request.get_json()
     if "name" in data:
-        instance["name"] = data["name"].strip()
+        instance.name = data["name"].strip()
     if "examType" in data:
-        instance["examType"] = data["examType"]
+        instance.exam_type = data["examType"]
     if "term" in data:
-        instance["term"] = data["term"]
+        instance.term = data["term"]
     if "year" in data:
-        instance["year"] = data["year"]
-    write_store(store)
-    return jsonify(instance)
+        instance.year = data["year"]
+    db.session.commit()
+    return jsonify(instance.to_dict())
 
 
 @app.route("/api/exam-instances/<instance_id>", methods=["DELETE"])
 @teacher_or_admin
 def delete_exam_instance(instance_id):
-    store = read_store()
-    original = len(store.get("exam_instances", []))
-    store["exam_instances"] = [e for e in store.get("exam_instances", []) if e["id"] != instance_id]
-    if len(store["exam_instances"]) == original:
+    # Use database instead of JSON store
+    instance = database.get_exam_instance_by_id(db, instance_id)
+    if not instance:
         return jsonify({"error": "Exam instance not found"}), 404
-    write_store(store)
+    db.session.delete(instance)
+    db.session.commit()
     return jsonify({"message": "Exam instance deleted"})
 
 
