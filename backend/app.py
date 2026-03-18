@@ -33,7 +33,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-i
 CORS(app, resources={
     r"/*": {
         "origins": [
-            "https://edumanage-pro-tassia-school-1.onrender.com",
+            "https://edumanage-pro-tassia-school.onrender.com",
             "http://localhost:3000",
             "http://localhost:18080"
         ],
@@ -1016,7 +1016,7 @@ def delete_user(user_id):
 @teacher_or_admin
 def get_exam_instances():
     # Use database instead of JSON store
-    exams = database.get_exam_instances(db)
+    exams = database.get_exam_instances(db.session)
     return jsonify([e.to_dict() for e in exams])
 
 
@@ -1059,7 +1059,7 @@ def get_exam_instance(instance_id):
 @admin_only
 def update_exam_instance(instance_id):
     # Use database instead of JSON store
-    instance = database.get_exam_instance_by_id(db, instance_id)
+    instance = database.get_exam_instance_by_id(db.session, instance_id)
     if not instance:
         return jsonify({"error": "Exam instance not found"}), 404
     
@@ -1080,7 +1080,7 @@ def update_exam_instance(instance_id):
 @teacher_or_admin
 def delete_exam_instance(instance_id):
     # Use database instead of JSON store
-    instance = database.get_exam_instance_by_id(db, instance_id)
+    instance = database.get_exam_instance_by_id(db.session, instance_id)
     if not instance:
         return jsonify({"error": "Exam instance not found"}), 404
     db.session.delete(instance)
