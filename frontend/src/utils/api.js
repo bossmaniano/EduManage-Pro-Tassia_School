@@ -1,7 +1,6 @@
-// Wrapper around fetch that includes credentials (httpOnly cookie auth)
-// Use VITE_API_URL environment variable for production (e.g., https://your-backend.onrender.com)
-// Fallback to edumanage-backend.onrender.com if not set
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://edumanage-backend.onrender.com';
+// API Base URL - hardcoded for production to avoid build issues
+// The VITE_ prefix is replaced at build time
+const API_BASE_URL = 'https://edumanage-backend.onrender.com';
 
 // Warn if API URL is not set
 if (!API_BASE_URL && import.meta.env.MODE === 'production') {
