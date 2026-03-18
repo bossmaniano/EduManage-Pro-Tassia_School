@@ -33,7 +33,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-i
 CORS(app, resources={
     r"/*": {
         "origins": [
-            "https://edumanage-pro-tassia-school.onrender.com",
+            "https://edumanage-pro-tassia-school-1.onrender.com",
             "http://localhost:3000",
             "http://localhost:18080"
         ],

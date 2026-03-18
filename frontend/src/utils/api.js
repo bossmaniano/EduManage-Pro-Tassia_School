@@ -1,5 +1,5 @@
 // API Base URL - point to backend
-const API_BASE_URL = 'https://edumanage-pro-tassia-school.onrender.com';
+const API_BASE_URL = 'https://edumanage-pro-tassia-school-1.onrender.com';
 
 // Warn if API URL is not set
 if (!API_BASE_URL && import.meta.env.MODE === 'production') {
