@@ -1028,15 +1028,21 @@ def create_exam_instance():
         return jsonify({"error": "name is required"}), 400
 
     # Use database instead of JSON store
-    exam_data = {
-        "id": f"exam-{str(uuid.uuid4())[:8]}",
-        "name": data["name"].strip(),
-        "exam_type": data.get("examType", ""),
-        "term": data.get("term", ""),
-        "year": data.get("year", "")
-    }
-    exam = database.create_exam_instance(db, exam_data)
-    return jsonify(exam.to_dict()), 201
+    try:
+        exam_data = {
+            "id": f"exam-{str(uuid.uuid4())[:8]}",
+            "name": data["name"].strip(),
+            "exam_type": data.get("examType", ""),
+            "term": data.get("term", ""),
+            "year": data.get("year", "")
+        }
+        exam = database.create_exam_instance(db.session, exam_data)
+        db.session.commit()
+        return jsonify(exam.to_dict()), 201
+    except Exception as e:
+        app.logger.error(f"Error creating exam instance: {e}")
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/exam-instances/<instance_id>", methods=["GET"])
