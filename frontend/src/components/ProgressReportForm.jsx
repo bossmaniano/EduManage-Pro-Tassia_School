@@ -47,7 +47,7 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
     return subjects.filter(s => cls.subjects.includes(s.id) && s.name !== 'French');
   })();
 
-  // Get French grade separately
+  // Get French grade separately - now just for display, not data bound
   const frenchSubject = subjects?.find(s => s.name === 'French');
   const frenchGrade = frenchSubject ? grades?.find(g => g.subjectId === frenchSubject.id) : null;
   const frenchScore = frenchGrade?.score || 0;
@@ -136,19 +136,17 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
         </tbody>
       </table>
 
-      {/* Standalone French Section */}
-      {frenchSubject && (
-        <div className="mb-6 border border-black p-3 bg-gray-50">
-          <div className="flex items-center gap-4">
-            <span className="font-semibold w-20">French:</span>
-            <span className="w-16 text-center border-b border-black">{hasFrenchScore ? frenchScore : ''}</span>
-            <span className="font-semibold w-16 ml-4">Rubric:</span>
-            <span className="w-20 text-center border-b border-black">{frenchRubric}</span>
-            <span className="font-semibold w-16 ml-4">Points:</span>
-            <span className="w-12 text-center border-b border-black">{hasFrenchScore ? frenchPoints : ''}</span>
-          </div>
+      {/* Standalone French Section - writable by hand */}
+      <div className="mb-6 border border-black p-3 bg-gray-50">
+        <div className="flex items-center gap-4">
+          <span className="font-semibold w-20">French:</span>
+          <span className="border-b border-black w-16 text-center"></span>
+          <span className="font-semibold w-16 ml-4">Rubric:</span>
+          <span className="border-b border-black w-20 text-center"></span>
+          <span className="font-semibold w-16 ml-4">Points:</span>
+          <span className="border-b border-black w-12 text-center"></span>
         </div>
-      )}
+      </div>
 
       {/* Footer Section */}
       <div className="grid grid-cols-2 gap-8 mt-8">
