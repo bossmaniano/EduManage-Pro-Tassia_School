@@ -25,10 +25,17 @@ from database import get_db, get_subjects as db_get_subjects, get_subject_by_id 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-# Configure CORS - using resources format for proper origin handling
+# Configure CORS - allow all origins for development, restrict in production
 CORS(app, resources={
     r"/*": {
-        "origins": ["https://edumanage-pro-tassia-school-1.onrender.com"]
+        "origins": [
+            "https://edumanage-pro-tassia-school-1.onrender.com",
+            "https://edumanage-pro-tassia-school.onrender.com",
+            "http://localhost:3000",
+            "http://localhost:18080"
+        ],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
     }
 }, supports_credentials=True)
 
