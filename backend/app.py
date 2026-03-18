@@ -53,6 +53,12 @@ else:
     
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_size': 20,
+    'max_overflow': 30,
+    'pool_pre_ping': True,
+    'pool_recycle': 3600
+}
 
 # Initialize Flask-SQLAlchemy with the app
 db.init_app(app)

@@ -137,7 +137,14 @@ else:
     SQLALCHEMY_DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
 # Create engine
-engine = create_engine(SQLALCHEMY_DATABASE_URL, echo=False)
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, 
+    echo=False,
+    pool_size=20,
+    max_overflow=30,
+    pool_pre_ping=True,
+    pool_recycle=3600
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Create tables if they don't exist
