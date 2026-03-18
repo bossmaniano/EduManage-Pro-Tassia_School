@@ -38,14 +38,20 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
     return student?.grade || '';
   })();
 
-  // Get subjects assigned to student's class
+  // Get subjects assigned to student's class (exclude French - shown separately)
   const classSubjects = (() => {
-    if (!student?.classId || !classes.length || !subjects?.length) return subjects || [];
+    if (!student?.classId || !classes.length || !subjects?.length) return subjects?.filter(s => s.name !== 'French') || [];
     const cls = classes.find(c => c.id === student.classId);
-    if (!cls?.subjects?.length) return subjects;
-    // Filter to only show subjects assigned to this class
-    return subjects.filter(s => cls.subjects.includes(s.id));
+    if (!cls?.subjects?.length) return subjects.filter(s => s.name !== 'French');
+    // Filter to only show subjects assigned to this class, excluding French
+    return subjects.filter(s => cls.subjects.includes(s.id) && s.name !== 'French');
   })();
+
+  // Get French grade separately
+  const frenchSubject = subjects?.find(s => s.name === 'French');
+  const frenchGrade = frenchSubject ? grades?.find(g => g.subjectId === frenchSubject.id) : null;
+  const frenchScore = frenchGrade?.score || 0;
+  const { rubric: frenchRubric, points: frenchPoints } = getRubricAndPoints(frenchScore);
 
   // Calculate average based on class subjects
   const totalScore = grades.reduce((sum, g) => sum + (g.score || 0), 0);
@@ -124,6 +130,20 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
           </tr>
         </tbody>
       </table>
+
+      {/* Standalone French Section */}
+      {frenchSubject && (
+        <div className="mb-6 border border-black p-3 bg-gray-50">
+          <div className="flex items-center gap-4">
+            <span className="font-semibold w-20">French:</span>
+            <span className="w-16 text-center border-b border-black">{frenchScore}</span>
+            <span className="font-semibold w-16 ml-4">Rubric:</span>
+            <span className="w-20 text-center border-b border-black">{frenchRubric}</span>
+            <span className="font-semibold w-16 ml-4">Points:</span>
+            <span className="w-12 text-center border-b border-black">{frenchPoints}</span>
+          </div>
+        </div>
+      )}
 
       {/* Footer Section */}
       <div className="grid grid-cols-2 gap-8 mt-8">
