@@ -93,12 +93,24 @@ with app.app_context():
                 {"id": "sub-001", "name": "Mathematics", "rubric": "Standard Math Rubric"},
                 {"id": "sub-002", "name": "English", "rubric": "Language Arts Rubric"},
                 {"id": "sub-004", "name": "Kiswahili", "rubric": ""},
-                {"id": "sub-005", "name": "Integrated Science", "rubric": ""}
+                {"id": "sub-005", "name": "Integrated Science", "rubric": ""},
+                {"id": "sub-french", "name": "French", "rubric": "French Language Rubric"}
             ]
             for sub in default_subjects:
                 database.create_subject(db.session, sub)
             db.session.commit()
             app.logger.info("Created default subjects")
+        else:
+            # Ensure French subject exists
+            french_exists = any(s.name == "French" for s in subjects)
+            if not french_exists:
+                french_subject = database.create_subject(db.session, {
+                    "id": "sub-french",
+                    "name": "French",
+                    "rubric": "French Language Rubric"
+                })
+                db.session.commit()
+                app.logger.info("Added French subject")
         
         # Create default student if none exist
         students = database.get_students(db.session)
