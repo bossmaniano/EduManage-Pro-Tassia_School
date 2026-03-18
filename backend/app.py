@@ -279,6 +279,9 @@ def login():
                     "assignedSubjects": db_user.assigned_subjects.split(",") if db_user.assigned_subjects else [],
                     "assignedClasses": db_user.assigned_classes.split(",") if db_user.assigned_classes else []
                 }
+        except Exception as e:
+            app.logger.error(f"Database error during login: {e}")
+            return jsonify({"error": "Login failed. Please try again."}), 500
         finally:
             db.close()
     
@@ -662,9 +665,13 @@ def delete_class(class_id):
 @app.route("/api/classes/<class_id>/students", methods=["GET"])
 @teacher_or_admin
 def get_class_students(class_id):
-    store = read_store()
-    students = [s for s in store.get("students", []) if s.get("classId") == class_id]
-    return jsonify(students)
+    # Use database instead of store.json for consistency
+    db = SessionLocal()
+    try:
+        students = database.get_students_by_class(db, class_id)
+        return jsonify([s.to_dict() for s in students])
+    finally:
+        db.close()
 
 
 # ─────────────────────────────────────────────
@@ -746,8 +753,13 @@ def delete_subject(subject_id):
 @app.route("/api/grades", methods=["GET"])
 @login_required
 def get_grades():
-    store = read_store()
-    grades = store["grades"]
+    # Use database instead of JSON store
+    db = SessionLocal()
+    try:
+        grades = database.get_grades(db)
+        grades = [g.to_dict() for g in grades]
+    finally:
+        db.close()
 
     # Optional filters
     student_id = request.args.get("studentId")
@@ -757,10 +769,12 @@ def get_grades():
     if subject_id:
         grades = [g for g in grades if g["subjectId"] == subject_id]
 
-    # Enrich with evaluation
+    # Enrich with evaluation - use database for students and subjects
+    students = database.get_students(db)
+    subjects = database.get_subjects(db)
+    students_map = {s.id: s.to_dict() for s in students}
+    subjects_map = {s.id: s.to_dict() for s in subjects}
     enriched = []
-    students_map = {s["id"]: s for s in store["students"]}
-    subjects_map = {s["id"]: s for s in store["subjects"]}
     for g in grades:
         ev = evaluate_score(g["score"])
         enriched.append({
@@ -835,42 +849,50 @@ def create_grade():
 @app.route("/api/grades/<grade_id>", methods=["PUT"])
 @teacher_or_admin
 def update_grade(grade_id):
-    store = read_store()
-    grade = next((g for g in store["grades"] if g["id"] == grade_id), None)
-    if not grade:
-        return jsonify({"error": "Grade not found"}), 404
+    # Use database instead of store.json
+    db = SessionLocal()
+    try:
+        grade = database.get_grade_by_id(db, grade_id)
+        if not grade:
+            return jsonify({"error": "Grade not found"}), 404
+        
+        # Teacher cannot edit locked grades
+        if grade.is_locked and g.current_user["role"] == "Teacher":
+            return jsonify({"error": "Grade is locked. Contact an administrator to make corrections."}), 403
 
-    # Teacher cannot edit locked grades
-    if grade.get("isLocked", False) and g.current_user["role"] == "Teacher":
-        return jsonify({"error": "Grade is locked. Contact an administrator to make corrections."}), 403
-
-    data = request.get_json()
-    if "score" in data:
-        try:
-            score = int(data["score"])
-            ev = evaluate_score(score)
-            grade["score"] = score
-            grade["comment"] = ev["comment"]
-        except (ValueError, TypeError) as e:
-            return jsonify({"error": str(e)}), 400
-    if "date" in data:
-        grade["date"] = data["date"]
-
-    write_store(store)
-    ev = evaluate_score(grade["score"])
-    return jsonify({**grade, "rubric": ev["rubric"], "points": ev["points"]})
+        data = request.get_json()
+        if "score" in data:
+            try:
+                score = int(data["score"])
+                ev = evaluate_score(score)
+                grade.score = score
+                grade.comment = ev["comment"]
+            except (ValueError, TypeError) as e:
+                return jsonify({"error": str(e)}), 400
+        if "date" in data:
+            grade.date = data["date"]
+        
+        db.commit()
+        db.refresh(grade)
+        ev = evaluate_score(grade.score)
+        return jsonify({**grade.to_dict(), "rubric": ev["rubric"], "points": ev["points"]})
+    finally:
+        db.close()
 
 
 @app.route("/api/grades/<grade_id>", methods=["DELETE"])
 @admin_only
 def delete_grade(grade_id):
-    store = read_store()
-    original = len(store["grades"])
-    store["grades"] = [g for g in store["grades"] if g["id"] != grade_id]
-    if len(store["grades"]) == original:
-        return jsonify({"error": "Grade not found"}), 404
-    write_store(store)
-    return jsonify({"message": "Grade deleted"})
+    # Use database instead of store.json
+    db = SessionLocal()
+    try:
+        grade = database.get_grade_by_id(db, grade_id)
+        if not grade:
+            return jsonify({"error": "Grade not found"}), 404
+        database.delete_grade(db, grade_id)
+        return jsonify({"message": "Grade deleted"})
+    finally:
+        db.close()
 
 
 # ─────────────────────────────────────────────
@@ -880,41 +902,51 @@ def delete_grade(grade_id):
 @app.route("/api/admin/grades/<grade_id>/unlock", methods=["POST"])
 @admin_only
 def unlock_grade(grade_id):
-    store = read_store()
-    grade = next((g for g in store["grades"] if g["id"] == grade_id), None)
-    if not grade:
-        return jsonify({"error": "Grade not found"}), 404
-    grade["isLocked"] = False
-    write_store(store)
-    return jsonify({"message": "Grade unlocked", "grade": grade})
+    # Use database instead of store.json
+    db = SessionLocal()
+    try:
+        grade = database.get_grade_by_id(db, grade_id)
+        if not grade:
+            return jsonify({"error": "Grade not found"}), 404
+        grade.is_locked = False
+        db.commit()
+        db.refresh(grade)
+        return jsonify({"message": "Grade unlocked", "grade": grade.to_dict()})
+    finally:
+        db.close()
 
 
 @app.route("/api/admin/grades/<grade_id>", methods=["PUT"])
 @admin_only
 def admin_update_grade(grade_id):
-    store = read_store()
-    grade = next((g for g in store["grades"] if g["id"] == grade_id), None)
-    if not grade:
-        return jsonify({"error": "Grade not found"}), 404
+    # Use database instead of store.json
+    db = SessionLocal()
+    try:
+        grade = database.get_grade_by_id(db, grade_id)
+        if not grade:
+            return jsonify({"error": "Grade not found"}), 404
 
-    data = request.get_json()
-    if "score" in data:
-        try:
-            score = int(data["score"])
-            ev = evaluate_score(score)
-            grade["score"] = score
-            grade["comment"] = ev["comment"]
-        except (ValueError, TypeError) as e:
-            return jsonify({"error": str(e)}), 400
-    if "date" in data:
-        grade["date"] = data["date"]
+        data = request.get_json()
+        if "score" in data:
+            try:
+                score = int(data["score"])
+                ev = evaluate_score(score)
+                grade.score = score
+                grade.comment = ev["comment"]
+            except (ValueError, TypeError) as e:
+                return jsonify({"error": str(e)}), 400
+        if "date" in data:
+            grade.date = data["date"]
 
-    # Re-lock after admin edit
-    grade["isLocked"] = True
+        # Re-lock after admin edit
+        grade.is_locked = True
 
-    write_store(store)
-    ev = evaluate_score(grade["score"])
-    return jsonify({**grade, "rubric": ev["rubric"], "points": ev["points"]})
+        db.commit()
+        db.refresh(grade)
+        ev = evaluate_score(grade.score)
+        return jsonify({**grade.to_dict(), "rubric": ev["rubric"], "points": ev["points"]})
+    finally:
+        db.close()
 
 
 # ─────────────────────────────────────────────
@@ -941,7 +973,7 @@ def create_user():
 
     db = SessionLocal()
     try:
-        # Check if username exists
+        # Check if username exists in database
         existing = database.get_user_by_username(db, data["username"].strip())
         if existing:
             return jsonify({"error": "Username already exists"}), 409
@@ -956,6 +988,9 @@ def create_user():
         }
         user = database.create_user(db, user_data)
         return jsonify(user.to_dict()), 201
+    except Exception as e:
+        app.logger.error(f"Error creating user: {e}")
+        return jsonify({"error": "Failed to create user. Please try again."}), 500
     finally:
         db.close()
 
@@ -963,35 +998,44 @@ def create_user():
 @app.route("/api/users/<user_id>", methods=["GET"])
 @admin_only
 def get_user(user_id):
-    store = read_store()
-    user = next((u for u in store.get("users", []) if u["id"] == user_id), None)
-    if not user:
-        return jsonify({"error": "User not found"}), 404
-    return jsonify({"id": user["id"], "username": user["username"], "role": user["role"], "assignedSubjects": user.get("assignedSubjects", [])})
+    # Use database instead of store.json
+    db = SessionLocal()
+    try:
+        user = database.get_user_by_id(db, user_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        return jsonify(user.to_dict())
+    finally:
+        db.close()
 
 
 @app.route("/api/users/<user_id>", methods=["PUT"])
 @admin_only
 def update_user(user_id):
-    store = read_store()
-    user = next((u for u in store.get("users", []) if u["id"] == user_id), None)
-    if not user:
-        return jsonify({"error": "User not found"}), 404
+    # Use database instead of store.json
+    db = SessionLocal()
+    try:
+        user = database.get_user_by_id(db, user_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
 
-    data = request.get_json()
-    if "username" in data:
-        user["username"] = data["username"].strip()
-    if "password" in data:
-        user["passwordHash"] = generate_password_hash(data["password"])
-    if "role" in data:
-        user["role"] = data["role"]
-    if "assignedSubjects" in data:
-        user["assignedSubjects"] = data["assignedSubjects"]
-    if "assignedClasses" in data:
-        user["assignedClasses"] = data["assignedClasses"]
+        data = request.get_json()
+        if "username" in data:
+            user.username = data["username"].strip()
+        if "password" in data:
+            user.password_hash = generate_password_hash(data["password"])
+        if "role" in data:
+            user.role = data["role"]
+        if "assignedSubjects" in data:
+            user.assigned_subjects = ",".join(data["assignedSubjects"])
+        if "assignedClasses" in data:
+            user.assigned_classes = ",".join(data["assignedClasses"])
 
-    write_store(store)
-    return jsonify({"id": user["id"], "username": user["username"], "role": user["role"], "assignedSubjects": user.get("assignedSubjects", []), "assignedClasses": user.get("assignedClasses", [])})
+        db.commit()
+        db.refresh(user)
+        return jsonify(user.to_dict())
+    finally:
+        db.close()
 
 
 @app.route("/api/users/<user_id>", methods=["DELETE"])
@@ -1048,11 +1092,15 @@ def create_exam_instance():
 @app.route("/api/exam-instances/<instance_id>", methods=["GET"])
 @teacher_or_admin
 def get_exam_instance(instance_id):
-    store = read_store()
-    instance = next((e for e in store.get("exam_instances", []) if e["id"] == instance_id), None)
-    if not instance:
-        return jsonify({"error": "Exam instance not found"}), 404
-    return jsonify(instance)
+    # Use database instead of store.json
+    db = SessionLocal()
+    try:
+        instance = database.get_exam_instance_by_id(db, instance_id)
+        if not instance:
+            return jsonify({"error": "Exam instance not found"}), 404
+        return jsonify(instance.to_dict())
+    finally:
+        db.close()
 
 
 @app.route("/api/exam-instances/<instance_id>", methods=["PUT"])
