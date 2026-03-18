@@ -25,12 +25,11 @@ from database import get_db, get_subjects as db_get_subjects, get_subject_by_id 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-# Configure CORS - allow same domain for production
+# Configure CORS - allow frontend domain
 CORS(app, resources={
     r"/*": {
         "origins": [
             "https://edumanage-pro-tassia-school-1.onrender.com",
-            "https://edumanage-pro-tassia-school.onrender.com",
             "http://localhost:3000",
             "http://localhost:18080"
         ],

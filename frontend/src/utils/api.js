@@ -1,5 +1,5 @@
-// API Base URL - use relative URLs (frontend and backend on same domain)
-const API_BASE_URL = '';
+// API Base URL - point to backend
+const API_BASE_URL = 'https://edumanage-pro-tassia-school.onrender.com';
 
 // Warn if API URL is not set
 if (!API_BASE_URL && import.meta.env.MODE === 'production') {
