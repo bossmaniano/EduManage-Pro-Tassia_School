@@ -93,7 +93,7 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
       <div className="flex items-center gap-4 mb-2">
         <p className="font-semibold">Type of Assessment: <span className="font-normal">SUMMATIVE ASSESSMENT</span></p>
         <span className="font-semibold ml-8">Absent:</span>
-        <span className="border-b border-black w-12 text-center">{student?.absentDays || ''}</span>
+        <span className="border-b border-black w-12 text-center"></span>
       </div>
 
       {/* Grades Table */}
