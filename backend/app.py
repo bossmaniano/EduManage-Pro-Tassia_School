@@ -101,8 +101,8 @@ with app.app_context():
             db.session.commit()
             app.logger.info("Created default subjects")
         else:
-            # Ensure French subject exists
-            french_exists = any(s.name == "French" for s in subjects)
+            # Ensure French subject exists - check by both name and ID
+            french_exists = any(s.name == "French" or s.id == "sub-french" for s in subjects)
             if not french_exists:
                 try:
                     french_subject = database.create_subject(db.session, {
@@ -114,7 +114,11 @@ with app.app_context():
                     app.logger.info("Added French subject")
                 except Exception as e:
                     db.session.rollback()
-                    app.logger.warning(f"French subject may already exist: {e}")
+                    # Check if it's a duplicate key error (already exists) - this is OK
+                    if "duplicate key" in str(e).lower() or "uniqueviolation" in str(e).lower():
+                        app.logger.info("French subject already exists (caught by duplicate key)")
+                    else:
+                        app.logger.warning(f"Error adding French subject: {e}")
         
         # Create default student if none exist
         students = database.get_students(db.session)
