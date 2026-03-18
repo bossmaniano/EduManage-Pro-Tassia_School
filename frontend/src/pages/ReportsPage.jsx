@@ -378,11 +378,7 @@ export default function ReportsPage({ onToast }) {
                 <GradePerformanceReport 
                   students={classReportData.students}
                   grades={classReportData.grades}
-                  subjects={
-                    classReportData.class?.subjects?.length > 0
-                      ? subjects.filter(s => classReportData.class.subjects.includes(s.id))
-                      : subjects
-                  }
+                  subjects={subjects}
                   className={classReportData.class}
                   examInstance={classReportData.examInstance}
                 />
