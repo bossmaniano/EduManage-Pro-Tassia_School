@@ -329,8 +329,8 @@ function ClassesRoute() {
 // ── Root App ─────────────────────────────────────────────────────────────────
 export default function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPageRoute />} />
           <Route path="/*" element={<ProtectedLayout />}>
@@ -345,8 +345,8 @@ export default function App() {
             <Route path="classes" element={<ClassesRoute />} />
           </Route>
         </Routes>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

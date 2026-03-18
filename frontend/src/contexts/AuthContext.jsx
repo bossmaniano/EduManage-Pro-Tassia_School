@@ -1,11 +1,13 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { apiFetch } from "../utils/api";
+import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Rehydrate session from cookie on mount
   useEffect(() => {
@@ -61,10 +63,10 @@ export function AuthProvider({ children }) {
     setUser(null);
     console.log('[Auth] User state cleared to null');
     
-    // Use location.href for full page navigation
+    // Use React Router navigate for proper redirect
     console.log('[Auth] Redirecting to /login');
-    window.location.href = "/login";
-  }, []);
+    navigate("/login", { replace: true });
+  }, [navigate]);
 
   const isAdmin = user?.role === "Admin";
   const isTeacher = user?.role === "Teacher";
