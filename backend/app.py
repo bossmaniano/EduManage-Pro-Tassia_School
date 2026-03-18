@@ -55,6 +55,21 @@ import database
 from database import init_db, SessionLocal
 init_db()
 
+# Ensure exam instances exist in database
+with app.app_context():
+    db = SessionLocal()
+    try:
+        exams = database.get_exam_instances(db)
+        if not exams:
+            # Create default exam instance
+            exam = database.create_exam_instance(db, {
+                "id": "exam-001",
+                "name": "Term 1 Final Exam, 2025"
+            })
+            app.logger.info("Created default exam instance")
+    finally:
+        db.close()
+
 STORE_PATH = os.path.join(os.path.dirname(__file__), "store.json")
 
 
