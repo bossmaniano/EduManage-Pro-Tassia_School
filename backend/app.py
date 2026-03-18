@@ -71,6 +71,7 @@ from database import SessionLocal, Base
 with app.app_context():
     # Use the Base from database.py to create tables since models are there
     Base.metadata.create_all(bind=db.engine)
+    print('Database connection verified with pre-ping')
 
 # Ensure exam instances exist in database
 with app.app_context():

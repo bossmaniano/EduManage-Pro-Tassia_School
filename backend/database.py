@@ -6,7 +6,7 @@ Supports both local JSON (fallback) and PostgreSQL (production)
 import os
 import json
 from sqlalchemy import create_engine, Column, String, Integer, Boolean, ForeignKey, Text
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker, scoped_session
 
 Base = declarative_base()
 
@@ -145,7 +145,9 @@ engine = create_engine(
     pool_pre_ping=True,
     pool_recycle=3600
 )
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Use scoped_session to prevent thread-local connection leaks
+session_factory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = scoped_session(session_factory)
 
 # Create tables if they don't exist
 Base.metadata.create_all(bind=engine)
