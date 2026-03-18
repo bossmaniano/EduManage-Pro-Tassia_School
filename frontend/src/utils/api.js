@@ -1,11 +1,8 @@
 // API Base URL - point to backend
-const API_BASE_URL = 'https://edumanage-pro-tassia-school-1.onrender.com';
+// Use environment variable if available, otherwise use default
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://edumanage-pro-tassia-school-1.onrender.com';
 
-// Warn if API URL is not set
-if (!API_BASE_URL && import.meta.env.MODE === 'production') {
-  console.warn('WARNING: VITE_API_URL is not set! API calls may fail in production.');
-}
-console.log('API Base URL:', API_BASE_URL || '(using relative URLs)');
+console.log('API Base URL:', API_BASE_URL);
 
 export async function apiFetch(url, options = {}) {
   // Prepend API base URL if set (for production)
@@ -21,10 +18,27 @@ export async function apiFetch(url, options = {}) {
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
+  
+  // Check if response is OK before returning
+  if (!res.ok) {
+    console.error(`[API] Error ${res.status}: ${res.statusText}`);
+    // Try to parse error response, but handle empty responses
+    try {
+      const text = await res.text();
+      if (text) {
+        return new Response(text, { status: res.status, statusText: res.statusText });
+      }
+    } catch (e) {
+      // Ignore JSON parse errors
+    }
+    return res;
+  }
+  
   // Auto-redirect to login for 401 on data endpoints (not auth endpoints)
   if (res.status === 401 && !url.startsWith('/api/auth')) {
     window.location.href = '/login';
     return null;
   }
+  
   return res;
 }
