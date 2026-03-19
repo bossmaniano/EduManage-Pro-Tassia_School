@@ -23,41 +23,68 @@ if (!API_BASE_URL) {
 
 console.log('API Base URL:', API_BASE_URL, '(hostname:', hostname, ')');
 
+// Track if we're already showing a timeout message
+let isShowingTimeoutMessage = false;
+
 export async function apiFetch(url, options = {}) {
   // Prepend API base URL if set (for production)
   const fullUrl = API_BASE_URL ? `${API_BASE_URL}${url}` : url;
   console.log(`[API] ${options.method || 'GET'} ${fullUrl}`);
-  
-  const res = await fetch(fullUrl, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
-  
-  // Check if response is OK before returning
-  if (!res.ok) {
-    console.error(`[API] Error ${res.status}: ${res.statusText}`);
-    // Try to parse error response, but handle empty responses
-    try {
-      const text = await res.text();
-      if (text) {
-        return new Response(text, { status: res.status, statusText: res.statusText });
+
+  // Create AbortController for timeout handling
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, 10000); // 10 second timeout
+
+  try {
+    const res = await fetch(fullUrl, {
+      ...options,
+      credentials: 'include',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+    clearTimeout(timeoutId);
+
+    // Check if response is OK before returning
+    if (!res.ok) {
+      console.error(`[API] Error ${res.status}: ${res.statusText}`);
+      // Try to parse error response, but handle empty responses
+      try {
+        const text = await res.text();
+        if (text) {
+          return new Response(text, { status: res.status, statusText: res.statusText });
+        }
+      } catch (e) {
+        // Ignore JSON parse errors
       }
-    } catch (e) {
-      // Ignore JSON parse errors
+      return res;
     }
+
+    // Auto-redirect to login for 401 on data endpoints (not auth endpoints)
+    if (res.status === 401 && !url.startsWith('/api/auth')) {
+      window.location.href = '/login';
+      return null;
+    }
+
     return res;
-  }
+  } catch (error) {
+    clearTimeout(timeoutId);
 
-  // Auto-redirect to login for 401 on data endpoints (not auth endpoints)
-  if (res.status === 401 && !url.startsWith('/api/auth')) {
-    window.location.href = '/login';
-    return null;
-  }
+    // Check if it's a timeout error
+    if (error.name === 'AbortError' && !isShowingTimeoutMessage) {
+      isShowingTimeoutMessage = true;
+      alert('The system is currently busy. Please do not refresh; your data is being processed.');
+      setTimeout(() => {
+        isShowingTimeoutMessage = false;
+      }, 15000); // Reset after 15 seconds
+    }
 
-  return res;
+    // Re-throw the error so the caller can handle it
+    throw error;
+  }
 }
