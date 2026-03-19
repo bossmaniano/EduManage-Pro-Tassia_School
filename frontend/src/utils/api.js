@@ -1,8 +1,27 @@
-// API Base URL - use relative path for production, localhost for development
-const isProduction = window.location.hostname !== 'localhost';
-const API_BASE_URL = isProduction ? '' : 'http://localhost:10000';
+// API Base URL - detect environment automatically
+// Use VITE_API_URL environment variable if available (set by Render)
+const hostname = window.location.hostname;
+const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+const isVercel = hostname.includes('vercel.app');
 
-console.log('API Base URL:', API_BASE_URL, '(production:', isProduction, ')');
+// Try to use environment variable first (for Render deployment)
+// VITE_ prefix is required for Vite to expose env vars to client code
+let API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
+if (!API_BASE_URL) {
+  if (isLocalhost) {
+    API_BASE_URL = 'http://localhost:10000';
+  } else if (isVercel) {
+    API_BASE_URL = ''; // Use relative URL on Vercel (same origin)
+  } else {
+    // For other production environments (like Render), this shouldn't happen
+    // if VITE_API_URL is properly set in render.yaml
+    console.warn('API_BASE_URL not set - API calls may fail');
+    API_BASE_URL = '';
+  }
+}
+
+console.log('API Base URL:', API_BASE_URL, '(hostname:', hostname, ')');
 
 export async function apiFetch(url, options = {}) {
   // Prepend API base URL if set (for production)

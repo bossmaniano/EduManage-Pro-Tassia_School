@@ -19,7 +19,7 @@ services:
   - name: edumanage-frontend
     type: static
     region: oregon
-    buildCommand: cd frontend && npm install && npm run build
+    buildCommand: cd frontend && npm install && VITE_API_URL=https://edumanage-backend.onrender.com npm run build
     publishDir: frontend/dist
     envVars:
       - key: VITE_API_URL
