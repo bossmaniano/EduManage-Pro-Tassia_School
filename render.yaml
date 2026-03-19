@@ -13,7 +13,7 @@ services:
       - key: SECRET_KEY
         value: edumanage-pro-secret-key-2024
       - key: RENDER_FRONTEND_URL
-        value: https://edumanage-pro-tassia-school-1.onrender.com
+        value: https://edumanage-pro-tassia-school.onrender.com
 
   # Frontend React App
   - name: edumanage-frontend
