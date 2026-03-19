@@ -49,7 +49,7 @@ def root():
 
 # Configure CORS - allow frontend domain
 # Get frontend URL from environment or use default
-FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL', 'https://edumanage-pro-tassia-school.onrender.com')
+FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL', 'https://edumanage-pro-tassia-school-1.onrender.com')
 
 # Explicit CORS configuration for the frontend
 CORS(app, 
@@ -74,7 +74,7 @@ def handle_options(path=None):
 # Global after_request handler to guarantee CORS headers
 @app.after_request
 def add_cors_headers(response):
-    response.headers['Access-Control-Allow-Origin'] = 'https://edumanage-pro-tassia-school.onrender.com'
+    response.headers['Access-Control-Allow-Origin'] = 'https://edumanage-pro-tassia-school-1.onrender.com'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
     response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS'
     response.headers['Access-Control-Allow-Credentials'] = 'true'
