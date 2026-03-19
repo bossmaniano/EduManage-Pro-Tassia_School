@@ -6,13 +6,14 @@ Processes raw scores into CBC framework metrics
 from collections import defaultdict
 
 # CBC Competency Mapping
-# EE (Exceeding Expectations), ME (Meeting Expectations), BE (Below Expectations)
+# AE (Above Expectations), ME (Meeting Expectations), BE (Below Expectations)
 COMPETENCY_MAPPING = {
-    'EE1': {'range': (80, 100), 'points': 4, 'label': 'Exceeding Expectations 1'},
-    'EE2': {'range': (70, 79), 'points': 3, 'label': 'Exceeding Expectations 2'},
-    'ME1': {'range': (50, 69), 'points': 2, 'label': 'Meeting Expectations 1'},
-    'ME2': {'range': (40, 49), 'points': 1, 'label': 'Meeting Expectations 2'},
-    'BE': {'range': (0, 39), 'points': 0, 'label': 'Below Expectations'},
+    'AE1': {'range': (90, 100), 'points': 4, 'label': 'Above Expectations 1'},
+    'AE2': {'range': (80, 89), 'points': 3, 'label': 'Above Expectations 2'},
+    'ME1': {'range': (65, 79), 'points': 3, 'label': 'Meeting Expectations 1'},
+    'ME2': {'range': (50, 64), 'points': 2, 'label': 'Meeting Expectations 2'},
+    'BE1': {'range': (40, 49), 'points': 1, 'label': 'Below Expectations 1'},
+    'BE2': {'range': (0, 39), 'points': 0, 'label': 'Below Expectations 2'},
 }
 
 
@@ -21,16 +22,18 @@ def get_competency(score):
     Map a numeric score to CBC competency level
     Returns: (competency_code, points)
     """
-    if score >= 80:
-        return 'EE1', 4
-    elif score >= 70:
-        return 'EE2', 3
+    if score >= 90:
+        return 'AE1', 4
+    elif score >= 80:
+        return 'AE2', 3
+    elif score >= 65:
+        return 'ME1', 3
     elif score >= 50:
-        return 'ME1', 2
+        return 'ME2', 2
     elif score >= 40:
-        return 'ME2', 1
+        return 'BE1', 1
     else:
-        return 'BE', 0
+        return 'BE2', 0
 
 
 def calculate_subject_mean_points(grades):
@@ -53,7 +56,7 @@ def calculate_subject_mean_points(grades):
         }
     
     # Count competencies
-    counts = {'EE1': 0, 'EE2': 0, 'ME1': 0, 'ME2': 0, 'BE': 0}
+    counts = {'AE1': 0, 'AE2': 0, 'ME1': 0, 'ME2': 0, 'BE1': 0, 'BE2': 0}
     
     for grade in grades:
         score = grade.get('score', 0)
@@ -62,12 +65,13 @@ def calculate_subject_mean_points(grades):
     
     total_students = len(grades)
     
-    # Calculate SMP
+    # Calculate SMP (Quality Index)
     smp = (
-        (counts['EE1'] * 4) +
-        (counts['EE2'] * 3) +
-        (counts['ME1'] * 2) +
-        (counts['ME2'] * 1)
+        (counts['AE1'] * 4) +
+        (counts['AE2'] * 3) +
+        (counts['ME1'] * 3) +
+        (counts['ME2'] * 2) +
+        (counts['BE1'] * 1)
     ) / total_students if total_students > 0 else 0
     
     return {
@@ -167,7 +171,7 @@ def calculate_value_add(current_smp, previous_smp):
 
 def calculate_pass_rate(grades, core_subjects=None):
     """
-    Calculate Pass Rate: Percentage of students achieving at least ME2 (40%)
+    Calculate Pass Rate: Percentage of students achieving at least BE1 (40%)
     
     Args:
         grades: List of grade dictionaries
@@ -189,7 +193,7 @@ def calculate_pass_rate(grades, core_subjects=None):
     
     for grade in grades:
         score = grade.get('score', 0)
-        # Pass = score >= 40 (ME2 or above)
+        # Pass = score >= 40 (BE1 or above)
         if score >= 40:
             passed += 1
         else:
