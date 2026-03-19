@@ -42,6 +42,11 @@ from cbc_analysis import (
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
+# Root route for health check
+@app.route('/')
+def root():
+    return jsonify({'status': 'ok', 'message': 'EduManage Pro API'})
+
 # Configure CORS - allow frontend domain
 # Get frontend URL from environment or use default
 FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL', 'https://edumanage-pro-tassia-school-1.onrender.com')
