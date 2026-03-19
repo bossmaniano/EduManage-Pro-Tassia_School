@@ -20,6 +20,7 @@ from flask import Flask, jsonify, request, g, make_response, send_from_directory
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import UniqueConstraint
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # Initialize Flask-SQLAlchemy
