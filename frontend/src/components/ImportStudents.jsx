@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Upload, FileSpreadsheet, FileText, Check, X, AlertCircle } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 
-// Direct fetch for file uploads - apiFetch doesn't handle FormData correctly
-const API_BASE_URL = 'http://localhost:10000';
+// Get API base URL from environment (supports both local and production)
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export default function ImportStudents({ classes = [], onSuccess }) {
   const [file, setFile] = useState(null);
