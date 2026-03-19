@@ -134,6 +134,18 @@ with app.app_context():
     Base.metadata.create_all(bind=db.engine)
     print('Database connection verified with pre-ping')
 
+    # Create unique constraint for grades if it doesn't exist
+    try:
+        from sqlalchemy import text
+        db.session.execute(text(
+            "ALTER TABLE grades ADD CONSTRAINT _student_subject_exam_uc UNIQUE (student_id, subject_id, exam_instance_id)"
+        ))
+        db.session.commit()
+        print('Added unique constraint to grades table')
+    except Exception as e:
+        # Constraint might already exist, that's OK
+        db.session.rollback()
+
 # Ensure exam instances exist in database
 with app.app_context():
     try:
