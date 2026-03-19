@@ -10,6 +10,7 @@ import SubjectsPage from "./pages/SubjectsPage";
 import GradesPage from "./pages/GradesPage";
 import ReportsPage from "./pages/ReportsPage";
 import UsersPage from "./pages/UsersPage";
+import CBCAnalysisPage from "./pages/CBCAnalysisPage";
 import ExamInstancesPage from "./pages/ExamInstancesPage";
 import CorrectionsPage from "./pages/CorrectionsPage";
 import ClassesPage from "./pages/ClassesPage";
@@ -59,6 +60,7 @@ function ProtectedLayout() {
     { path: "/exam-instances", label: "Exam Instances", icon: Icons.clipboard },
     { path: "/corrections", label: "Corrections", icon: Icons.edit },
     { path: "/reports", label: "Reports", icon: Icons.reports },
+    { path: "/analysis", label: "CBC Analysis", icon: Icons.trending },
   ];
 
   const teacherNav = [
@@ -257,6 +259,10 @@ function ClassesWrapper() {
   const { onToast } = useOutletContext();
   return <ClassesPage onToast={onToast} />;
 }
+function CBCAnalysisWrapper() {
+  const { onToast } = useOutletContext();
+  return <CBCAnalysisPage onToast={onToast} />;
+}
 
 // ── Page titles bar above content ────────────────────────────────────────────
 function PageWithTitle({ title, subtitle, children }) {
@@ -325,6 +331,15 @@ function ClassesRoute() {
     </AdminOnly>
   );
 }
+function CBCAnalysisRoute() {
+  return (
+    <AdminOnly>
+      <PageWithTitle title="CBC Analysis" subtitle="Competency Based Curriculum Analysis">
+        <CBCAnalysisWrapper />
+      </PageWithTitle>
+    </AdminOnly>
+  );
+}
 
 // ── Root App ─────────────────────────────────────────────────────────────────
 export default function App() {
@@ -343,6 +358,7 @@ export default function App() {
             <Route path="exam-instances" element={<ExamInstancesRoute />} />
             <Route path="corrections" element={<CorrectionsRoute />} />
             <Route path="classes" element={<ClassesRoute />} />
+            <Route path="analysis" element={<CBCAnalysisWrapper />} />
           </Route>
         </Routes>
       </AuthProvider>

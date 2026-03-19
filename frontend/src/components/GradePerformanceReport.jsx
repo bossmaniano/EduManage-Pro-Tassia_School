@@ -30,7 +30,7 @@ export default function GradePerformanceReport({
   // Get unique subject IDs from grades that exist
   const gradeSubjectIds = [...new Set(filteredGrades.map(g => g.subjectId))];
   
-  // Calculate student data with rankings
+  // Calculate student data WITHOUT rankings (just list students)
   const studentData = students.map(student => {
     const studentGrades = filteredGrades.filter(g => g.studentId === student.id);
     const scores = {};
@@ -63,12 +63,16 @@ export default function GradePerformanceReport({
       totalPoints,
       avg
     };
-  }).sort((a, b) => b.totalPoints - a.totalPoints); // Sort by total points descending
+  }); // No sorting - students listed without ranking
 
-  // Add rankings
-  const rankedStudents = studentData.map((s, i) => ({ ...s, rank: i + 1 }));
+  // Students listed without rankings
+  const rankedStudents = studentData.map((s, i) => ({ ...s, roll: i + 1 }));
 
-  // Calculate summary stats based on points
+  // Calculate class average (mean of all student scores)
+  const allScores = filteredGrades.filter(g => g.score > 0).map(g => g.score);
+  const classAverage = allScores.length > 0 
+    ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
+    : 0;
   const allTotalPoints = rankedStudents.map(s => s.totalPoints);
   const averagePoints = allTotalPoints.length > 0 
     ? Math.round(allTotalPoints.reduce((a, b) => a + b, 0) / allTotalPoints.length) 
@@ -76,29 +80,6 @@ export default function GradePerformanceReport({
   
   // Total students who sat for the exam (students with at least one grade)
   const totalStudents = rankedStudents.filter(s => s.totalPoints > 0).length;
-  
-  // Find highest performing subject (highest average points)
-  const highestSubject = subjects.reduce((highest, subject) => {
-    const subjectGrades = filteredGrades.filter(g => g.subjectId === subject.id && g.score > 0);
-    const avgPoints = subjectGrades.length > 0
-      ? Math.round(subjectGrades.reduce((sum, g) => sum + getRubricAndPoints(g.score).points, 0) / subjectGrades.length)
-      : 0;
-    if (!highest || avgPoints > highest.avgPoints) {
-      return { name: subject.name, avgPoints };
-    }
-    return highest;
-  }, null);
-  
-  const lowestSubject = subjects.reduce((lowest, subject) => {
-    const subjectGrades = filteredGrades.filter(g => g.subjectId === subject.id);
-    const avgPoints = subjectGrades.length > 0
-      ? Math.round(subjectGrades.reduce((sum, g) => sum + getRubricAndPoints(g.score).points, 0) / subjectGrades.length)
-      : 0;
-    if (!lowest || avgPoints < lowest.avgPoints) {
-      return { name: subject.name, avgPoints };
-    }
-    return lowest;
-  }, null);
 
   // Get short subject codes
   const getSubjectCode = (name) => {
@@ -136,13 +117,12 @@ export default function GradePerformanceReport({
           <p className="text-2xl font-bold">{totalStudents}</p>
         </div>
         <div className="border border-black p-3 text-center">
-          <p className="text-xs font-semibold uppercase">Highest Subject</p>
-          <p className="text-sm font-bold">{highestSubject?.name || '-'} ({highestSubject?.avgPoints || 0} pts)</p>
+          <p className="text-xs font-semibold uppercase">Class Average</p>
+          <p className="text-2xl font-bold">{classAverage}%</p>
         </div>
         <div className="border border-black p-3 text-center">
-          <p className="text-xs font-semibold uppercase">Lowest Subject</p>
-          <p className="text-sm font-bold">{lowestSubject?.name || '-'}</p>
-          <p className="text-xs text-gray-600">({lowestSubject?.avgPoints || 0} pts)</p>
+          <p className="text-xs font-semibold uppercase">Total Points</p>
+          <p className="text-2xl font-bold">{rankedStudents.reduce((sum, s) => sum + s.totalPoints, 0)}</p>
         </div>
       </div>
 
@@ -150,7 +130,7 @@ export default function GradePerformanceReport({
       <table className="w-full border-collapse border border-black text-sm">
         <thead>
           <tr className="bg-gray-100">
-            <th className="border border-black py-2 px-2 text-center font-bold w-12">Rank</th>
+            <th className="border border-black py-2 px-2 text-center font-bold w-12">Roll</th>
             <th className="border border-black py-2 px-2 text-left font-bold">Student Name</th>
             {subjects.map(subject => (
               <th key={subject.id} className="border border-black py-2 px-2 text-center font-bold w-16">
@@ -163,13 +143,9 @@ export default function GradePerformanceReport({
         </thead>
         <tbody>
           {rankedStudents.map(student => (
-            <tr key={student.id} className={student.rank <= 3 ? 'bg-yellow-50' : ''}>
+            <tr key={student.id}>
               <td className="border border-black py-1 px-2 text-center font-bold">
-                {student.rank <= 3 ? (
-                  <span className="text-yellow-600">★{student.rank}</span>
-                ) : (
-                  student.rank
-                )}
+                {student.roll}
               </td>
               <td className="border border-black py-1 px-2 font-medium">{student.name}</td>
               {subjects.map(subject => (

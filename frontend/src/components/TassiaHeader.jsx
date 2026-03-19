@@ -19,7 +19,7 @@ export default function TassiaHeader() {
       
       {/* Address */}
       <div className="text-xs mt-2 text-gray-700">
-        <p>P.O Box 35235-00200, Nairobi | Tel: +254 020 82 0017, Cellphone: 0722 803 400</p>
+        <p>P.O Box 35235-00200, Nairobi | Tel: +254 020 82 0017, Cellphone: 0722603400</p>
       </div>
     </div>
   );

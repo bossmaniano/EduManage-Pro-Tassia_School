@@ -1,6 +1,5 @@
-// API Base URL - point to backend
-// Use environment variable if available, otherwise use default
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://edumanage-pro-tassia-school-1.onrender.com';
+// API Base URL - point to local backend for development
+const API_BASE_URL = 'http://localhost:10000';
 
 console.log('API Base URL:', API_BASE_URL);
 

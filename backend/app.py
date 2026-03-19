@@ -24,7 +24,20 @@ from werkzeug.security import generate_password_hash, check_password_hash
 db = SQLAlchemy()
 
 # Import database functions (use aliases to avoid name conflicts)
-from database import get_db, get_subjects as db_get_subjects, get_subject_by_id as db_get_subject_by_id, create_subject as db_create_subject, update_subject as db_update_subject, delete_subject as db_delete_subject
+from database import get_db, get_all_students as db_get_all_students, get_subjects as db_get_subjects, get_subject_by_id as db_get_subject_by_id, create_subject as db_create_subject, update_subject as db_update_subject, delete_subject as db_delete_subject
+
+# Import parser for file uploads
+from import_parser import parse_import_file, validate_and_process
+
+# Import CBC analysis engine
+from cbc_analysis import (
+    generate_cbc_report,
+    calculate_subject_mean_points,
+    calculate_stream_variance,
+    calculate_value_add,
+    calculate_pass_rate,
+    get_competency
+)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -35,6 +48,7 @@ CORS(app, resources={
         "origins": [
             "https://edumanage-pro-tassia-school-1.onrender.com",
             "http://localhost:3000",
+            "http://localhost:3001",
             "http://localhost:18080"
         ],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -46,7 +60,11 @@ CORS(app, resources={
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if not DATABASE_URL:
     # Use SQLite for local development if no PostgreSQL URL provided
-    DATABASE_URL = 'sqlite:///edumanage.db'
+    # Use absolute path to ensure consistency with database.py
+    import pathlib
+    db_path = pathlib.Path(__file__).parent.resolve() / 'edumanage.db'
+    DATABASE_URL = f'sqlite:///{db_path}'
+    print(f"Using database: {DATABASE_URL}")
 else:
     # Fix for Railway's postgres:// prefix (SQLAlchemy needs postgresql://)
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
@@ -486,11 +504,10 @@ def dashboard():
 @app.route("/api/students", methods=["GET"])
 @login_required
 def get_students():
-    # Use database instead of JSON store
-    db = SessionLocal()
+    # Use Flask-SQLAlchemy session for consistency
     try:
-        students = database.get_students(db)
-        classes = database.get_classes(db)
+        students = database.get_students(db.session)
+        classes = database.get_classes(db.session)
         class_map = {c.id: c.to_dict() for c in classes}
         result = []
         for student in students:
@@ -500,8 +517,9 @@ def get_students():
                 student_dict['class'] = class_map[class_id]
             result.append(student_dict)
         return jsonify(result)
-    finally:
-        db.close()
+    except Exception as e:
+        app.logger.error(f"Error getting students: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/students", methods=["POST"])
@@ -707,6 +725,119 @@ def get_class_students(class_id):
         return jsonify([s.to_dict() for s in students])
     finally:
         db.close()
+
+
+# ─────────────────────────────────────────────
+# STUDENT IMPORT
+# ─────────────────────────────────────────────
+
+@app.route("/api/students/import/parse", methods=["POST"])
+@admin_only
+def parse_student_import():
+    """
+    Parse an uploaded file and extract student names
+    Supports .xlsx and .docx files
+    Returns list of extracted names with validation results
+    """
+    if 'file' not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+    
+    file = request.files['file']
+    if not file.filename:
+        return jsonify({"error": "No file selected"}), 400
+    
+    # Validate file type
+    allowed_extensions = {'xlsx', 'docx'}
+    ext = file.filename.lower().split('.')[-1]
+    if ext not in allowed_extensions:
+        return jsonify({"error": f"Invalid file type. Supported: {', '.join(allowed_extensions)}"}), 400
+    
+    try:
+        file_content = file.read()
+        
+        # Parse the file
+        students, error = parse_import_file(file_content, file.filename)
+        
+        if error:
+            return jsonify({"error": error}), 400
+        
+        # Get existing students for duplicate checking
+        db = SessionLocal()
+        try:
+            existing_students = db_get_all_students(db)
+            existing_names = [s.name for s in existing_students]
+        finally:
+            db.close()
+        
+        # Validate and process
+        valid_students, duplicates, invalid_count = validate_and_process(students, existing_names)
+        
+        return jsonify({
+            "total_extracted": len(students),
+            "valid_students": valid_students,
+            "duplicates": duplicates,
+            "invalid_count": invalid_count,
+            "message": f"Found {len(students)} names. {len(valid_students)} valid, {len(duplicates)} duplicates, {invalid_count} invalid."
+        })
+        
+    except Exception as e:
+        return jsonify({"error": f"Error processing file: {str(e)}"}), 500
+
+
+@app.route("/api/students/import/process", methods=["POST"])
+@admin_only
+def process_student_import():
+    """
+    Process validated student names and create them in the database
+    """
+    data = request.get_json()
+    
+    if not data or 'students' not in data:
+        return jsonify({"error": "No students provided"}), 400
+    
+    students_to_create = data['students']
+    class_id = data.get('classId')  # Optional class assignment
+    
+    if not students_to_create:
+        return jsonify({"error": "No students to import"}), 400
+    
+    # Import the Student model directly
+    from database import Student
+    
+    created = []
+    errors = []
+    
+    try:
+        for name in students_to_create:
+            try:
+                # Generate student ID
+                student_id = f"s-{uuid.uuid4().hex[:8]}"
+                
+                # Create student using Flask-SQLAlchemy session directly
+                student = Student(
+                    id=student_id,
+                    name=name,
+                    class_id=class_id or ''
+                )
+                db.session.add(student)
+                db.session.commit()
+                db.session.refresh(student)
+                
+                created.append(student.to_dict())
+            except Exception as e:
+                db.session.rollback()
+                errors.append(f"{name}: {str(e)}")
+        
+        return jsonify({
+            "created_count": len(created),
+            "created_students": created,
+            "errors": errors,
+            "message": f"Successfully created {len(created)} students"
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 
 # ─────────────────────────────────────────────
@@ -981,6 +1112,120 @@ def admin_update_grade(grade_id):
         db.refresh(grade)
         ev = evaluate_score(grade.score)
         return jsonify({**grade.to_dict(), "rubric": ev["rubric"], "points": ev["points"]})
+    finally:
+        db.close()
+
+
+# ─────────────────────────────────────────────
+# CBC ANALYSIS
+# ─────────────────────────────────────────────
+
+@app.route("/api/analysis/cbc", methods=["POST"])
+@teacher_or_admin
+def cbc_analysis():
+    """
+    Generate CBC analysis report for an exam instance
+    
+    Request body:
+    {
+        "examInstanceId": "exam-123",
+        "classId": "class-123" (optional - filters by class),
+        "previousExamId": "exam-122" (optional for value-add)
+    }
+    """
+    data = request.get_json()
+    
+    if not data or 'examInstanceId' not in data:
+        return jsonify({"error": "examInstanceId is required"}), 400
+    
+    exam_instance_id = data['examInstanceId']
+    class_id = data.get('classId')  # Optional class filter
+    previous_exam_id = data.get('previousExamId')
+    
+    try:
+        # Use Flask-SQLAlchemy session for consistency
+        from database import Student
+        
+        # Get all grades for this exam using Flask-SQLAlchemy session
+        grades = database.get_grades_by_exam(db.session, exam_instance_id)
+        
+        if not grades:
+            return jsonify({"error": "No grades found for this exam"}), 404
+        
+        # Filter by class if specified
+        if class_id:
+            # Get student IDs for this class
+            students_in_class = db.session.query(Student).filter(Student.class_id == class_id).all()
+            student_ids = [s.id for s in students_in_class]
+            grades = [g for g in grades if g.student_id in student_ids]
+        
+        if not grades:
+            return jsonify({"error": "No grades found for this exam/class combination"}), 404
+        
+        # Convert to dict format for analysis
+        grades_data = [g.to_dict() for g in grades]
+        
+        # Get subject names map
+        subjects = database.get_subjects(db.session)
+        subject_map = {s.id: s.name for s in subjects}
+        
+        # Generate CBC report
+        report = generate_cbc_report(grades_data, exam_instance_id, previous_exam_id)
+        
+        # Replace subject IDs with names in the report
+        if 'subject_analysis' in report:
+            subject_analysis = {}
+            for subj_id, subj_data in report['subject_analysis'].items():
+                subj_name = subject_map.get(subj_id, subj_id)
+                subject_analysis[subj_name] = subj_data
+            report['subject_analysis'] = subject_analysis
+        
+        # Update total_students to reflect filtered count if class specified
+        if class_id and 'overall' in report:
+            report['overall']['total_students'] = len(set(g['studentId'] for g in grades_data))
+        
+        return jsonify(report)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/analysis/subject/<subject_id>", methods=["GET"])
+@teacher_or_admin
+def subject_analysis(subject_id):
+    """
+    Get detailed CBC analysis for a specific subject across all exams
+    """
+    exam_id = request.args.get('examId')
+    
+    db = SessionLocal()
+    try:
+        if exam_id:
+            grades = database.get_grades_by_exam_and_subject(db, exam_id, subject_id)
+        else:
+            grades = database.get_grades_by_subject(db, subject_id)
+        
+        if not grades:
+            return jsonify({"error": "No grades found"}), 404
+        
+        grades_data = [g.to_dict() for g in grades]
+        
+        # Calculate SMP
+        smp_data = calculate_subject_mean_points(grades_data)
+        pass_data = calculate_pass_rate(grades_data)
+        
+        return jsonify({
+            "subject_id": subject_id,
+            "exam_id": exam_id,
+            "smp": smp_data,
+            "pass_rate": pass_data,
+            "total_students": len(grades_data)
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
     finally:
         db.close()
 

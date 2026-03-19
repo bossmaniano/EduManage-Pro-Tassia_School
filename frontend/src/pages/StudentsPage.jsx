@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "../utils/api";
 import { Icon, Icons, Card, Modal, FormField, Input, Select, Button, EmptyState, Spinner } from "../components/ui";
+import ImportStudents from "../components/ImportStudents";
 
 export default function StudentsPage({ onToast }) {
   const [students, setStudents] = useState([]);
@@ -13,6 +14,7 @@ export default function StudentsPage({ onToast }) {
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -87,6 +89,7 @@ export default function StudentsPage({ onToast }) {
             className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
         </div>
         <Button onClick={openAdd}><Icon d={Icons.plus} size={16} />Add Student</Button>
+        <Button onClick={() => setImportModalOpen(true)}><Icon d={Icons.upload} size={16} />Import</Button>
       </div>
 
       {loading ? <Spinner /> : (
@@ -186,6 +189,18 @@ export default function StudentsPage({ onToast }) {
             <Button variant="danger" onClick={() => handleDelete(deleteConfirm.id)} className="flex-1">Delete</Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Import Modal */}
+      <Modal open={importModalOpen} onClose={() => setImportModalOpen(false)} title="Bulk Import Students">
+        <ImportStudents 
+          classes={classes} 
+          onSuccess={(newStudents) => {
+            setImportModalOpen(false);
+            load();
+            onToast(`Successfully imported ${newStudents.length} students`, "success");
+          }}
+        />
       </Modal>
     </div>
   );

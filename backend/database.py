@@ -131,7 +131,11 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 # If no DATABASE_URL, use SQLite for local development
 if not DATABASE_URL:
     print("WARNING: DATABASE_URL not set. Using SQLite for local development.")
-    SQLALCHEMY_DATABASE_URL = 'sqlite:///edumanage.db'
+    # Use absolute path to ensure same database is used
+    import pathlib
+    db_path = pathlib.Path(__file__).parent.resolve() / 'edumanage.db'
+    SQLALCHEMY_DATABASE_URL = f'sqlite:///{db_path}'
+    print(f"Using database: {SQLALCHEMY_DATABASE_URL}")
 else:
     # Fix for Railway's postgres:// prefix (SQLAlchemy needs postgresql://)
     SQLALCHEMY_DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
@@ -266,6 +270,10 @@ def get_student_by_id(db, student_id):
 def get_students_by_class(db, class_id):
     return db.query(Student).filter(Student.class_id == class_id).all()
 
+def get_all_students(db):
+    """Get all students from database"""
+    return db.query(Student).all()
+
 def create_student(db, student_data):
     student = Student(**student_data)
     db.add(student)
@@ -303,6 +311,17 @@ def get_grades_by_subject(db, subject_id):
 
 def get_grades_by_exam(db, exam_instance_id):
     return db.query(Grade).filter(Grade.exam_instance_id == exam_instance_id).all()
+
+def get_grades_by_subject(db, subject_id):
+    """Get all grades for a specific subject"""
+    return db.query(Grade).filter(Grade.subject_id == subject_id).all()
+
+def get_grades_by_exam_and_subject(db, exam_instance_id, subject_id):
+    """Get grades for a specific exam and subject"""
+    return db.query(Grade).filter(
+        Grade.exam_instance_id == exam_instance_id,
+        Grade.subject_id == subject_id
+    ).all()
 
 def get_grades_by_student_and_exam(db, student_id, exam_instance_id):
     return db.query(Grade).filter(

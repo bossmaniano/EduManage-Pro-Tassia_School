@@ -1,3 +1,43 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Print styles */
+@media print {
+  /* Hide non-essential elements */
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Reset body styles for print */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  /* Ensure cards print with borders */
+  .print-border {
+    border: 1px solid #ccc !important;
+  }
+  
+  /* Prevent page breaks inside cards */
+  .avoid-break-inside {
+    break-inside: avoid;
+  }
+  
+  /* Adjust grid for print */
+  .print-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 1rem !important;
+  }
+  
+  /* Table styles for print */
+  table {
+    font-size: 12px !important;
+  }
+  
+  th, td {
+    padding: 8px !important;
+  }
+}
