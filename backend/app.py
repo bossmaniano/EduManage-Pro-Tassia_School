@@ -50,18 +50,32 @@ def root():
 # Configure CORS - allow frontend domain
 # Get frontend URL from environment or use default
 FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL', 'https://edumanage-pro-tassia-school-1.onrender.com')
+
+# Allow all origins in production for simplicity (Render handles security)
 CORS(app, resources={
     r"/*": {
         "origins": [
             FRONTEND_URL,
             "http://localhost:3000",
             "http://localhost:3001",
-            "http://localhost:18080"
+            "http://localhost:18080",
+            "https://edumanage-pro-tassia-school.onrender.com",
+            "https://edumanage-pro-tassia-school-1.onrender.com"
         ],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
+        "allow_headers": ["Content-Type", "Authorization"],
+        "expose_headers": ["Content-Type"],
+        "supports_credentials": True
     }
 }, supports_credentials=True)
+
+# Handle preflight requests explicitly
+@app.route('/api/auth/login', methods=['OPTIONS'])
+@app.route('/api/auth/logout', methods=['OPTIONS'])
+@app.route('/api/auth/me', methods=['OPTIONS'])
+@app.route('/api/<path:path>', methods=['OPTIONS'])
+def handle_options(path=None):
+    return '', 200
 
 # Configure SQLAlchemy database
 DATABASE_URL = os.environ.get('DATABASE_URL')
