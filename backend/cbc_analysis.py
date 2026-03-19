@@ -5,33 +5,39 @@ Processes raw scores into CBC framework metrics
 
 from collections import defaultdict
 
-# CBC Competency Mapping
-# AE (Above Expectations), ME (Meeting Expectations), BE (Below Expectations)
+# CBC Competency Mapping - matches student report card rubric
+# EE (Exceeding Expectations), ME (Meeting Expectations), AE (Approaching Expectations), BE (Below Expectations)
 COMPETENCY_MAPPING = {
-    'AE1': {'range': (90, 100), 'points': 4, 'label': 'Above Expectations 1'},
-    'AE2': {'range': (80, 89), 'points': 3, 'label': 'Above Expectations 2'},
-    'ME1': {'range': (65, 79), 'points': 3, 'label': 'Meeting Expectations 1'},
-    'ME2': {'range': (50, 64), 'points': 2, 'label': 'Meeting Expectations 2'},
-    'BE1': {'range': (40, 49), 'points': 1, 'label': 'Below Expectations 1'},
-    'BE2': {'range': (0, 39), 'points': 0, 'label': 'Below Expectations 2'},
+    'EE1': {'range': (90, 100), 'points': 8, 'label': 'Exceeding Expectations 1'},
+    'EE2': {'range': (75, 89), 'points': 7, 'label': 'Exceeding Expectations 2'},
+    'ME1': {'range': (58, 74), 'points': 6, 'label': 'Meeting Expectations 1'},
+    'ME2': {'range': (41, 57), 'points': 5, 'label': 'Meeting Expectations 2'},
+    'AE1': {'range': (31, 40), 'points': 4, 'label': 'Approaching Expectations 1'},
+    'AE2': {'range': (21, 30), 'points': 3, 'label': 'Approaching Expectations 2'},
+    'BE1': {'range': (11, 20), 'points': 2, 'label': 'Below Expectations 1'},
+    'BE2': {'range': (0, 10), 'points': 0, 'label': 'Below Expectations 2'},
 }
 
 
 def get_competency(score):
     """
-    Map a numeric score to CBC competency level
+    Map a numeric score to CBC competency level (matches report card rubric)
     Returns: (competency_code, points)
     """
     if score >= 90:
+        return 'EE1', 8
+    elif score >= 75:
+        return 'EE2', 7
+    elif score >= 58:
+        return 'ME1', 6
+    elif score >= 41:
+        return 'ME2', 5
+    elif score >= 31:
         return 'AE1', 4
-    elif score >= 80:
+    elif score >= 21:
         return 'AE2', 3
-    elif score >= 65:
-        return 'ME1', 3
-    elif score >= 50:
-        return 'ME2', 2
-    elif score >= 40:
-        return 'BE1', 1
+    elif score >= 11:
+        return 'BE1', 2
     else:
         return 'BE2', 0
 
@@ -56,7 +62,7 @@ def calculate_subject_mean_points(grades):
         }
     
     # Count competencies
-    counts = {'AE1': 0, 'AE2': 0, 'ME1': 0, 'ME2': 0, 'BE1': 0, 'BE2': 0}
+    counts = {'EE1': 0, 'EE2': 0, 'ME1': 0, 'ME2': 0, 'AE1': 0, 'AE2': 0, 'BE1': 0, 'BE2': 0}
     
     for grade in grades:
         score = grade.get('score', 0)
@@ -65,13 +71,15 @@ def calculate_subject_mean_points(grades):
     
     total_students = len(grades)
     
-    # Calculate SMP (Quality Index)
+    # Calculate SMP (Quality Index) - matches rubric points
     smp = (
+        (counts['EE1'] * 8) +
+        (counts['EE2'] * 7) +
+        (counts['ME1'] * 6) +
+        (counts['ME2'] * 5) +
         (counts['AE1'] * 4) +
         (counts['AE2'] * 3) +
-        (counts['ME1'] * 3) +
-        (counts['ME2'] * 2) +
-        (counts['BE1'] * 1)
+        (counts['BE1'] * 2)
     ) / total_students if total_students > 0 else 0
     
     return {
@@ -193,8 +201,8 @@ def calculate_pass_rate(grades, core_subjects=None):
     
     for grade in grades:
         score = grade.get('score', 0)
-        # Pass = score >= 40 (BE1 or above)
-        if score >= 40:
+        # Pass = score >= 41 (ME2 or above = 5 points)
+        if score >= 41:
             passed += 1
         else:
             failed += 1

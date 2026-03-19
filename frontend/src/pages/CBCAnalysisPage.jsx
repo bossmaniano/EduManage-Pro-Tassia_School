@@ -80,8 +80,11 @@ export default function CBCAnalysisPage({ onToast }) {
       'EE1': 'bg-green-600',
       'EE2': 'bg-green-400',
       'ME1': 'bg-blue-500',
-      'ME2': 'bg-yellow-500',
-      'BE': 'bg-red-500'
+      'ME2': 'bg-blue-300',
+      'AE1': 'bg-yellow-500',
+      'AE2': 'bg-yellow-400',
+      'BE1': 'bg-orange-500',
+      'BE2': 'bg-red-500'
     };
     return colors[competency] || 'bg-gray-500';
   };
@@ -217,7 +220,10 @@ export default function CBCAnalysisPage({ onToast }) {
                     <th className="px-4 py-2 text-center">EE2</th>
                     <th className="px-4 py-2 text-center">ME1</th>
                     <th className="px-4 py-2 text-center">ME2</th>
-                    <th className="px-4 py-2 text-center">BE</th>
+                    <th className="px-4 py-2 text-center">AE1</th>
+                    <th className="px-4 py-2 text-center">AE2</th>
+                    <th className="px-4 py-2 text-center">BE1</th>
+                    <th className="px-4 py-2 text-center">BE2</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -250,8 +256,23 @@ export default function CBCAnalysisPage({ onToast }) {
                         </span>
                       </td>
                       <td className="px-4 py-2 text-center">
-                        <span className={`${getCompetencyColor('BE')} text-white px-2 py-1 rounded text-sm`}>
-                          {data.competencies?.BE || 0}
+                        <span className={`${getCompetencyColor('AE1')} text-white px-2 py-1 rounded text-sm`}>
+                          {data.competencies?.AE1 || 0}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        <span className={`${getCompetencyColor('AE2')} text-white px-2 py-1 rounded text-sm`}>
+                          {data.competencies?.AE2 || 0}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        <span className={`${getCompetencyColor('BE1')} text-white px-2 py-1 rounded text-sm`}>
+                          {data.competencies?.BE1 || 0}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        <span className={`${getCompetencyColor('BE2')} text-white px-2 py-1 rounded text-sm`}>
+                          {data.competencies?.BE2 || 0}
                         </span>
                       </td>
                     </tr>
