@@ -1,2 +1,2 @@
-# SPA Fallback - all routes serve index.html for React Router
+# SPA Fallback for React Router on Render
 /*    /index.html   200
