@@ -1,2 +1,12 @@
-# SPA Fallback for React Router on Render
-/*    /index.html   200
+# Render SPA redirect rules
+/students /index.html 200
+/subjects /index.html 200
+/grades /index.html 200
+/reports /index.html 200
+/users /index.html 200
+/exam-instances /index.html 200
+/corrections /index.html 200
+/classes /index.html 200
+/analysis /index.html 200
+/login /index.html 200
+/* /index.html 200
