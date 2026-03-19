@@ -1,7 +1,8 @@
-// API Base URL - point to local backend for development
-const API_BASE_URL = 'http://localhost:10000';
+// API Base URL - use relative path for production, localhost for development
+const isProduction = window.location.hostname !== 'localhost';
+const API_BASE_URL = isProduction ? '' : 'http://localhost:10000';
 
-console.log('API Base URL:', API_BASE_URL);
+console.log('API Base URL:', API_BASE_URL, '(production:', isProduction, ')');
 
 export async function apiFetch(url, options = {}) {
   // Prepend API base URL if set (for production)
@@ -32,12 +33,12 @@ export async function apiFetch(url, options = {}) {
     }
     return res;
   }
-  
+
   // Auto-redirect to login for 401 on data endpoints (not auth endpoints)
   if (res.status === 401 && !url.startsWith('/api/auth')) {
     window.location.href = '/login';
     return null;
   }
-  
+
   return res;
 }
