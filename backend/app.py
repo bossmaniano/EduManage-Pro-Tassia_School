@@ -15,7 +15,7 @@ from datetime import date, datetime, timedelta
 from functools import wraps
 
 import jwt
-from flask import Flask, jsonify, request, g, make_response
+from flask import Flask, jsonify, request, g, make_response, send_from_directory
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -1601,6 +1601,22 @@ def subject_report(subject_id):
     finally:
         db.close()
 
+
+# Catch-all route for SPA frontend - serves index.html for any undefined GET requests
+# This serves as a safety net in case the frontend is ever served from Flask
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def catch_all(path):
+    # Check if it's an API call (should return 404)
+    if path.startswith('api/'):
+        return jsonify({'error': 'Not found'}), 404
+    # For non-API paths, serve the frontend index.html
+    # This expects the frontend dist files to be in a 'static' folder next to app.py
+    # For deployed scenario, the frontend is served by Render's static service
+    try:
+        return send_from_directory('../frontend/dist', 'index.html')
+    except:
+        return jsonify({'error': 'Frontend not available'}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))

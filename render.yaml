@@ -21,6 +21,10 @@ services:
     region: oregon
     buildCommand: cd frontend && npm install && VITE_API_URL=https://edumanage-pro-tassia-school.onrender.com npm run build
     publishDir: frontend/dist
+    routes:
+      - source: /*
+        destination: /index.html
+        status: 200
     envVars:
       - key: VITE_API_URL
         value: https://edumanage-pro-tassia-school.onrender.com
