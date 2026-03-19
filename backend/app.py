@@ -7,6 +7,7 @@ import json
 import uuid
 import os
 import sys
+import html
 try:
     import fcntl
 except ImportError:
@@ -41,6 +42,22 @@ from cbc_analysis import (
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# Secure session cookies
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = True  # Only send over HTTPS in production
+
+# Force HTTPS in production (Render provides HTTPS)
+if os.environ.get('RENDER_FRONTEND_URL'):
+    app.config['SESSION_COOKIE_SECURE'] = True
+
+# XSS Protection - escape HTML in user input
+def escape_html(text):
+    """Escape HTML special characters to prevent XSS attacks"""
+    if text is None:
+        return ""
+    return html.escape(str(text))
 
 # Root route for health check
 @app.route('/')
@@ -989,11 +1006,19 @@ def create_grade():
     if not data or not all(k in data for k in required):
         return jsonify({"error": "studentId, subjectId, score, and examInstanceId are required"}), 400
 
-    # Teacher subject restriction
+    # Teacher subject and class restriction
     current_user = g.current_user
     if current_user["role"] == "Teacher":
         if data["subjectId"] not in current_user.get("assignedSubjects", []):
             return jsonify({"error": "You are not assigned to this subject"}), 403
+
+        # Verify teacher can only edit students in their assigned classes
+        student = database.get_student_by_id(db.session, data["studentId"])
+        if student and student.class_id:
+            assigned_classes = current_user.get("assignedClasses", [])
+            if assigned_classes and student.class_id not in assigned_classes:
+                app.logger.warning(f"Teacher {current_user['id']} attempted to grade student in unassigned class {student.class_id}")
+                return jsonify({"error": "You can only grade students in your assigned classes"}), 403
 
     try:
         score = int(data["score"])
@@ -1025,7 +1050,7 @@ def create_grade():
             "student_id": data["studentId"],
             "subject_id": data["subjectId"],
             "score": score,
-            "comment": ev["comment"],
+            "comment": escape_html(ev["comment"]),
             "date": data.get("date", str(date.today())),
             "exam_instance_id": data["examInstanceId"],
             "is_locked": True,
