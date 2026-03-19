@@ -51,23 +51,17 @@ def root():
 # Get frontend URL from environment or use default
 FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL', 'https://edumanage-pro-tassia-school-1.onrender.com')
 
-# Allow all origins in production for simplicity (Render handles security)
-CORS(app, resources={
-    r"/*": {
-        "origins": [
-            FRONTEND_URL,
-            "http://localhost:3000",
-            "http://localhost:3001",
-            "http://localhost:18080",
-            "https://edumanage-pro-tassia-school.onrender.com",
-            "https://edumanage-pro-tassia-school-1.onrender.com"
-        ],
+# Explicit CORS configuration for the frontend
+CORS(app, 
+    resources={r"/api/*": {
+        "origins": "https://edumanage-pro-tassia-school-1.onrender.com",
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
-        "expose_headers": ["Content-Type"],
         "supports_credentials": True
-    }
-}, supports_credentials=True)
+    }},
+    supports_credentials=True,
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+)
 
 # Handle preflight requests explicitly
 @app.route('/api/auth/login', methods=['OPTIONS'])
@@ -76,6 +70,15 @@ CORS(app, resources={
 @app.route('/api/<path:path>', methods=['OPTIONS'])
 def handle_options(path=None):
     return '', 200
+
+# Global after_request handler to guarantee CORS headers
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = 'https://edumanage-pro-tassia-school-1.onrender.com'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+    response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS'
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    return response
 
 # Configure SQLAlchemy database
 DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -323,6 +326,8 @@ def teacher_or_admin(f):
 
 @app.route("/api/auth/login", methods=["POST"])
 def login():
+    # Debug: Log the origin of the request
+    print('Login attempt received from origin: ' + request.headers.get('Origin', 'unknown'))
     data = request.get_json()
     if not data or not all(k in data for k in ["username", "password"]):
         return jsonify({"error": "username and password are required"}), 400
