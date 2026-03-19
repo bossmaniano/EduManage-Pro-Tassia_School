@@ -99,7 +99,11 @@ class ExamInstance(Base):
 
 class Grade(Base):
     __tablename__ = 'grades'
-    
+    __table_args__ = (
+        # Prevent duplicate grades for same student/subject/exam
+        UniqueConstraint('student_id', 'subject_id', 'exam_instance_id', name='_student_subject_exam_uc'),
+    )
+
     id = Column(String, primary_key=True)
     student_id = Column(String, ForeignKey('students.id'), nullable=False)
     subject_id = Column(String, ForeignKey('subjects.id'), nullable=False)

@@ -19,6 +19,7 @@ import jwt
 from flask import Flask, jsonify, request, g, make_response, send_from_directory
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # Initialize Flask-SQLAlchemy
@@ -1028,8 +1029,8 @@ def create_grade():
 
     # Use Flask-SQLAlchemy db.session
     try:
-        app.logger.info(f"Creating grade for student: {data['studentId']}, subject: {data['subjectId']}, exam: {data['examInstanceId']}")
-        
+        app.logger.info(f"Creating/updating grade for student: {data['studentId']}, subject: {data['subjectId']}, exam: {data['examInstanceId']}")
+
         # Validate FK references in database
         student = database.get_student_by_id(db.session, data["studentId"])
         if not student:
@@ -1038,27 +1039,49 @@ def create_grade():
         subject = database.get_subject_by_id(db.session, data["subjectId"])
         if not subject:
             return jsonify({"error": "Subject not found"}), 404
-        
+
         # Get exam instance
         from database import get_exam_instance_by_id
         exam = get_exam_instance_by_id(db.session, data["examInstanceId"])
         if not exam:
             return jsonify({"error": "Exam instance not found"}), 404
 
-        grade_data = {
-            "id": str(uuid.uuid4()),
-            "student_id": data["studentId"],
-            "subject_id": data["subjectId"],
-            "score": score,
-            "comment": escape_html(ev["comment"]),
-            "date": data.get("date", str(date.today())),
-            "exam_instance_id": data["examInstanceId"],
-            "is_locked": True,
-            "submitted_by": current_user["id"]
-        }
-        grade = database.create_grade(db.session, grade_data)
+        # Check if grade already exists for this student/subject/exam
+        from database import Grade
+        existing_grade = db.session.query(Grade).filter(
+            Grade.student_id == data["studentId"],
+            Grade.subject_id == data["subjectId"],
+            Grade.exam_instance_id == data["examInstanceId"]
+        ).first()
+
+        if existing_grade:
+            # Update existing grade
+            existing_grade.score = score
+            existing_grade.comment = escape_html(ev["comment"])
+            existing_grade.date = data.get("date", str(date.today()))
+            existing_grade.submitted_by = current_user["id"]
+            db.session.commit()
+            grade = existing_grade
+        else:
+            # Create new grade with upsert logic
+            grade_data = {
+                "id": str(uuid.uuid4()),
+                "student_id": data["studentId"],
+                "subject_id": data["subjectId"],
+                "score": score,
+                "comment": escape_html(ev["comment"]),
+                "date": data.get("date", str(date.today())),
+                "exam_instance_id": data["examInstanceId"],
+                "is_locked": True,
+                "submitted_by": current_user["id"]
+            }
+            grade = database.create_grade(db.session, grade_data)
         db.session.commit()
         return jsonify({**grade.to_dict(), "rubric": ev["rubric"], "points": ev["points"]}), 201
+    except IntegrityError as e:
+        app.logger.error(f"IntegrityError (duplicate grade): {e}")
+        db.session.rollback()
+        return jsonify({"error": "Data was recently updated by another user. Please refresh."}), 409
     except Exception as e:
         app.logger.error(f"Error creating grade: {e}")
         db.session.rollback()

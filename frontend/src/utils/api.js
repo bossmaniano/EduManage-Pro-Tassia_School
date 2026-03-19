@@ -53,6 +53,12 @@ export async function apiFetch(url, options = {}) {
     // Check if response is OK before returning
     if (!res.ok) {
       console.error(`[API] Error ${res.status}: ${res.statusText}`);
+
+      // Handle 409 Conflict - show warning to user
+      if (res.status === 409) {
+        alert('Conflict Detected: Another teacher has just updated these marks. Please refresh the page to see the latest changes.');
+      }
+
       // Try to parse error response, but handle empty responses
       try {
         const text = await res.text();
