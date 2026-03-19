@@ -5,7 +5,7 @@ Supports both local JSON (fallback) and PostgreSQL (production)
 
 import os
 import json
-from sqlalchemy import create_engine, Column, String, Integer, Boolean, ForeignKey, Text
+from sqlalchemy import create_engine, Column, String, Integer, Boolean, ForeignKey, Text, UniqueConstraint
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker, scoped_session
 
 Base = declarative_base()
