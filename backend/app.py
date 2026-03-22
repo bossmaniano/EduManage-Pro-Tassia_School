@@ -1127,7 +1127,7 @@ def create_grade():
             existing_grade.comment = escape_html(ev["comment"])
             existing_grade.date = data.get("date", str(date.today()))
             existing_grade.submitted_by = current_user["id"]
-            existing_grade.updated_by = current_user["username"]
+            # existing_grade.updated_by = current_user["username"]
             db.session.commit()
             grade = existing_grade
         else:
@@ -1141,8 +1141,8 @@ def create_grade():
                 "date": data.get("date", str(date.today())),
                 "exam_instance_id": data["examInstanceId"],
                 "is_locked": True,
-                "submitted_by": current_user["id"],
-                "updated_by": current_user["username"]
+                "submitted_by": current_user["id"]
+                # "updated_by": current_user["username"]
             }
             grade = database.create_grade(db.session, grade_data)
         db.session.commit()
@@ -1186,8 +1186,8 @@ def update_grade(grade_id):
         if "date" in data:
             grade.date = data["date"]
         
-        # Update audit trail
-        grade.updated_by = current_username
+        # # Update audit trail
+        # grade.updated_by = current_username
         
         db.commit()
         db.refresh(grade)
@@ -1258,8 +1258,8 @@ def admin_update_grade(grade_id):
         # Re-lock after admin edit
         grade.is_locked = True
         
-        # Capture audit trail
-        grade.updated_by = g.current_user.get("username", "")
+        # # Capture audit trail
+        # grade.updated_by = g.current_user.get("username", "")
 
         db.commit()
         db.refresh(grade)
@@ -1284,10 +1284,8 @@ def get_audit_logs():
     db = SessionLocal()
     try:
         # Get grades with updated_by populated (sorted by most recent first)
-        grades = db.query(Grade).filter(
-            Grade.updated_by != '',
-            Grade.updated_by.isnot(None)
-        ).order_by(Grade.updated_at.desc()).limit(50).all()
+        # Temporarily disabled - columns need migration
+        grades = []  # db.query(Grade).filter(Grade.updated_by != '', Grade.updated_by.isnot(None)).order_by(Grade.updated_at.desc()).limit(50).all()
         
         # Get all students and subjects for lookup
         students = {s.id: s.name for s in db.query(Student).all()}
@@ -1302,8 +1300,8 @@ def get_audit_logs():
                 "studentName": student_name,
                 "subject": subject_name,
                 "newMark": grade.score,
-                "teacherName": grade.updated_by,
-                "timestamp": grade.updated_at.strftime('%Y-%m-%d %H:%M:%S') if grade.updated_at else None
+                "teacherName": "N/A",  # grade.updated_by
+                "timestamp": None  # grade.updated_at.strftime('%Y-%m-%d %H:%M:%S') if grade.updated_at else None
             })
         
         return jsonify(audit_logs)
