@@ -375,6 +375,10 @@ def login():
     if not data or not all(k in data for k in ["username", "password"]):
         return jsonify({"error": "username and password are required"}), 400
 
+    # Get client info for security logging
+    ip_address = request.remote_addr or ''
+    user_agent = request.headers.get('User-Agent', '')[:255]
+    
     app.logger.info(f"Login attempt for username: {data['username']}")
     
     # First check store.json for legacy users
@@ -408,6 +412,22 @@ def login():
         app.logger.info(f"Found user in store.json: {user['username']}")
     
     if not user or not check_password_hash(user["passwordHash"], data["password"]):
+        # Log failed login attempt
+        db = SessionLocal()
+        try:
+            database.log_security_event(
+                db, 
+                event_type='LOGIN_FAIL',
+                user_id=None,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                details=f"Attempted username: {data['username']}"
+            )
+            db.commit()
+        except Exception as e:
+            app.logger.error(f"Failed to log security event: {e}")
+        finally:
+            db.close()
         return jsonify({"error": "Invalid credentials"}), 401
 
     payload = {
@@ -430,6 +450,24 @@ def login():
     # Check if we're in production by checking for RENDER_FRONTEND_URL
     is_production = bool(os.environ.get('RENDER_FRONTEND_URL'))
     app.logger.info(f"Login success - is_production: {is_production}, setting cookie with samesite={'None' if is_production else 'Lax'}")
+    
+    # Log successful login
+    db = SessionLocal()
+    try:
+        database.log_security_event(
+            db,
+            event_type='LOGIN_SUCCESS',
+            user_id=user["id"],
+            ip_address=ip_address,
+            user_agent=user_agent,
+            details=f"Username: {user['username']}"
+        )
+        db.commit()
+    except Exception as e:
+        app.logger.error(f"Failed to log security event: {e}")
+    finally:
+        db.close()
+    
     resp.set_cookie('token', token, httponly=True, samesite='None' if is_production else 'Lax', secure=is_production, max_age=28800)
     return resp
 
@@ -731,6 +769,16 @@ def bulk_delete_students():
         
         # Then delete the students in bulk
         students_deleted = db.query(Student).filter(Student.id.in_(student_ids)).delete(synchronize_session=False)
+        
+        # Log bulk delete action
+        database.log_security_event(
+            db,
+            event_type='BULK_DELETE',
+            user_id=g.current_user.get('id'),
+            ip_address=request.remote_addr or '',
+            user_agent=request.headers.get('User-Agent', '')[:255],
+            details=f"Deleted {students_deleted} students, {grades_deleted} grades"
+        )
         
         db.commit()
         app.logger.info(f"Bulk deleted {students_deleted} students")
@@ -1368,6 +1416,33 @@ def get_audit_logs():
             })
         
         return jsonify(audit_logs)
+    finally:
+        db.close()
+
+
+@app.route("/api/admin/security-stats", methods=["GET"])
+@admin_only
+def get_security_stats():
+    """
+    Get security statistics:
+    - Failed logins in last 24 hours
+    - Suspicious IPs ( >10 failed attempts in last hour)
+    """
+    from database import SecurityEvent
+    db = SessionLocal()
+    try:
+        stats = database.get_failed_logins_by_ip_last_hour(db)
+        
+        # Format response
+        return jsonify({
+            "failed_logins_24h": stats['total_24h'],
+            "failed_logins_by_ip": stats['by_ip'],
+            "suspicious_ips": [
+                {"ip": ip, "attempts": count, "status": "SUSPICIOUS"}
+                for ip, count in stats['suspicious_ips'].items()
+            ],
+            "alert": len(stats['suspicious_ips']) > 0
+        })
     finally:
         db.close()
 

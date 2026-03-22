@@ -149,6 +149,31 @@ class GradeAuditLog(Base):
             'timestamp': self.timestamp.strftime('%Y-%m-%d %H:%M:%S') if self.timestamp else None
         }
 
+
+class SecurityEvent(Base):
+    """Security event logging table - fast inserts for login attempts and sensitive actions"""
+    __tablename__ = 'security_events'
+    
+    id = Column(String, primary_key=True)
+    user_id = Column(String, nullable=True)  # Can be null for failed login attempts
+    event_type = Column(String, nullable=False)  # LOGIN_FAIL, LOGIN_SUCCESS, PASSWORD_CHANGE, BULK_DELETE, etc.
+    ip_address = Column(String, default='')
+    user_agent = Column(String, default='')
+    details = Column(String, default='')  # Additional details (e.g., attempted username)
+    timestamp = Column(DateTime, default=func.now())
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'userId': self.user_id,
+            'eventType': self.event_type,
+            'ipAddress': self.ip_address,
+            'userAgent': self.user_agent,
+            'details': self.details,
+            'timestamp': self.timestamp.strftime('%Y-%m-%d %H:%M:%S') if self.timestamp else None
+        }
+
+
 # ==================== DATABASE CONNECTION ====================
 
 # Get database URL from environment
@@ -413,6 +438,63 @@ def delete_grade(db, grade_id):
     if grade:
         db.delete(grade)
         db.commit()
+
+
+# ==================== SECURITY EVENTS ====================
+
+def log_security_event(db, event_type, user_id=None, ip_address='', user_agent='', details=''):
+    """
+    Fast insert for security events.
+    Does NOT commit - caller should handle transaction to avoid overwhelming the DB.
+    """
+    import uuid
+    event = SecurityEvent(
+        id=str(uuid.uuid4()),
+        user_id=user_id,
+        event_type=event_type,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        details=details
+    )
+    db.add(event)
+    # Don't commit here - let caller batch or commit as needed
+    return event
+
+
+def get_failed_logins_last_24h(db):
+    """Get count of failed login attempts in last 24 hours"""
+    from datetime import datetime, timedelta
+    cutoff = datetime.now() - timedelta(hours=24)
+    return db.query(SecurityEvent).filter(
+        SecurityEvent.event_type == 'LOGIN_FAIL',
+        SecurityEvent.timestamp >= cutoff
+    ).all()
+
+
+def get_failed_logins_by_ip_last_hour(db):
+    """Get failed login counts by IP in the last hour"""
+    from datetime import datetime, timedelta
+    cutoff = datetime.now() - timedelta(hours=1)
+    events = db.query(SecurityEvent).filter(
+        SecurityEvent.event_type == 'LOGIN_FAIL',
+        SecurityEvent.timestamp >= cutoff
+    ).all()
+    
+    # Group by IP
+    ip_counts = {}
+    for event in events:
+        ip = event.ip_address
+        if ip:
+            ip_counts[ip] = ip_counts.get(ip, 0) + 1
+    
+    # Flag suspicious IPs (>10 attempts)
+    suspicious = {ip: count for ip, count in ip_counts.items() if count > 10}
+    return {
+        'total_24h': len(events),
+        'by_ip': ip_counts,
+        'suspicious_ips': suspicious
+    }
+
 
 # Exam Instances
 def get_exam_instances(db):
