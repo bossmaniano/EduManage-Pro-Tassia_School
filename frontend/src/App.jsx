@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, Outlet } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Icon, Icons, Toast, Spinner } from "./components/ui";
+import SessionTimeoutModal from "./components/SessionTimeoutModal";
 
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -36,7 +37,7 @@ function AdminOnly({ children }) {
 
 // ── ProtectedLayout ─────────────────────────────────────────────────────────
 function ProtectedLayout() {
-  const { user, loading, logout, isAdmin, isTeacher, showTimeoutWarning, extendSession } = useAuth();
+  const { user, loading, logout, isAdmin, isTeacher, showTimeoutWarning, extendSession, getLastActivityTime } = useAuth();
   const [toast, showToast] = useToast();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const AUDIT_SYSTEM_STATUS = "ACTIVE";
@@ -233,39 +234,13 @@ function ProtectedLayout() {
         </div>
       </main>
 
-      {/* Session Timeout Warning Modal */}
-      {showTimeoutWarning && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md mx-4 shadow-xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-                <span className="text-2xl">⏰</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">Session Expiring</h3>
-                <p className="text-sm text-gray-500">3 minutes remaining</p>
-              </div>
-            </div>
-            <p className="text-gray-600 mb-6">
-              Your session will expire in 3 minutes due to inactivity. Click below to stay logged in.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={logout}
-                className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
-              >
-                Log Out
-              </button>
-              <button
-                onClick={extendSession}
-                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors"
-              >
-                Stay Logged In
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Analog Session Timeout Modal */}
+      <SessionTimeoutModal
+        show={showTimeoutWarning}
+        onStayLoggedIn={extendSession}
+        onLogout={logout}
+        lastActivityTime={getLastActivityTime()}
+      />
 
       <Toast msg={toast.msg} type={toast.type} />
     </div>

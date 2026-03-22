@@ -19,6 +19,9 @@ export function AuthProvider({ children }) {
   const warningTimerRef = useRef(null);
   const logoutTimerRef = useRef(null);
   
+  // Expose lastActivityTime for the analog timer
+  const getLastActivityTime = useCallback(() => lastActivityRef.current, []);
+  
   // Reset session timers on user activity
   const resetSessionTimers = useCallback(() => {
     lastActivityRef.current = Date.now();
@@ -135,15 +138,26 @@ export function AuthProvider({ children }) {
   }, [navigate]);
   
   // Extend session (called when user clicks "Stay Logged In")
-  const extendSession = useCallback(() => {
-    resetSessionTimers();
+  const extendSession = useCallback(async () => {
+    try {
+      // Call backend to validate session is still valid
+      const res = await apiFetch("/api/auth/refresh", { method: "POST" });
+      if (res && res.ok) {
+        // Reset local timers
+        resetSessionTimers();
+        return true;
+      }
+    } catch (e) {
+      console.error("Session refresh failed:", e);
+    }
+    return false;
   }, [resetSessionTimers]);
 
   const isAdmin = user?.role === "Admin";
   const isTeacher = user?.role === "Teacher";
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin, isTeacher, showTimeoutWarning, extendSession }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin, isTeacher, showTimeoutWarning, extendSession, getLastActivityTime }}>
       {children}
     </AuthContext.Provider>
   );

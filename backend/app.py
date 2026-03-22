@@ -446,6 +446,25 @@ def logout():
     return resp
 
 
+@app.route("/api/auth/refresh", methods=["POST"])
+@login_required
+def refresh_session():
+    """
+    Refresh session - called when user clicks 'Stay Logged In'.
+    This validates the session is still valid and returns success.
+    The frontend resets its local timers on success.
+    """
+    app.logger.info(f"Session refresh for user: {g.current_user['username']}")
+    return jsonify({
+        "message": "Session refreshed",
+        "user": {
+            "id": g.current_user["id"],
+            "username": g.current_user["username"],
+            "role": g.current_user["role"]
+        }
+    })
+
+
 @app.route("/api/auth/me", methods=["GET"])
 @login_required
 def me():
