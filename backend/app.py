@@ -1128,11 +1128,7 @@ def create_grade():
             existing_grade.comment = escape_html(ev["comment"])
             existing_grade.date = data.get("date", str(date.today()))
             existing_grade.submitted_by = current_user["id"]
-            # existing_grade.updated_by = current_user["username"]
-            
-            # Update audit columns on the grade itself
-            existing_grade.updated_by = current_user.get("username", current_user.get("id", ""))
-            existing_grade.updated_at = datetime.now()
+            # Audit via GradeAuditLog table - no columns on Grade table
             
             # Create audit log entry
             database.create_audit_log(
@@ -1162,11 +1158,7 @@ def create_grade():
             }
             grade = database.create_grade(db.session, grade_data)
             
-            # Set audit columns for new grade
-            grade.updated_by = current_user.get("username", current_user.get("id", ""))
-            grade.updated_at = datetime.now()
-            
-            # Create audit log for new grade (old value is 0)
+            # Create audit log for new grade (audit via GradeAuditLog table) (old value is 0)
             database.create_audit_log(
                 db.session,
                 grade_id=grade.id,
@@ -1230,9 +1222,7 @@ def update_grade(grade_id):
         if "date" in data:
             grade.date = data["date"]
         
-        # Update audit trail columns
-        grade.updated_by = current_username
-        grade.updated_at = datetime.now()
+        # Audit is via GradeAuditLog table
         
         db.commit()
         db.refresh(grade)
