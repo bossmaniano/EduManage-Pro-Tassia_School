@@ -133,7 +133,7 @@ class GradeAuditLog(Base):
     __tablename__ = 'grade_audit_log'
     
     id = Column(String, primary_key=True)
-    grade_id = Column(String, ForeignKey('grades.id'), nullable=False)
+    grade_id = Column(String, nullable=False)  # No FK - stores ID as string to avoid delete conflicts
     old_value = Column(Integer, default=0)
     new_value = Column(Integer, default=0)
     changed_by = Column(String, default='')
@@ -434,6 +434,14 @@ def get_all_audit_logs(db, limit=50):
     ).limit(limit).all()
 
 def delete_grade(db, grade_id):
+    # First delete any audit logs for this grade (to avoid FK issues)
+    try:
+        db.query(GradeAuditLog).filter(GradeAuditLog.grade_id == grade_id).delete(synchronize_session=False)
+    except Exception:
+        # Table might not exist yet - ignore
+        pass
+    
+    # Then delete the grade
     grade = db.query(Grade).filter(Grade.id == grade_id).first()
     if grade:
         db.delete(grade)
