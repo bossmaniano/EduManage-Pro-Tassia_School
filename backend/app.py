@@ -50,6 +50,18 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_SECURE'] = True  # Only send over HTTPS in production
 
+# Session timeout - 15 minutes (900 seconds)
+app.config['PERMANENT_SESSION_LIFETIME'] = 900  # 15 minutes in seconds
+
+# Session refresh on activity - reset session lifetime on each request
+@app.before_request
+def before_request():
+    from flask import session, request
+    # Reset session/modify session lifetime on every active API request
+    if session.get('user_id'):
+        session.permanent = True
+        # Session will now expire 15 minutes from this request
+
 # Force HTTPS in production (Render provides HTTPS)
 if os.environ.get('RENDER_FRONTEND_URL'):
     app.config['SESSION_COOKIE_SECURE'] = True
@@ -675,6 +687,49 @@ def delete_student(student_id):
         db.close()
 
 
+# POST /api/admin/students/bulk-delete - Delete multiple students at once
+@app.route("/api/admin/students/bulk-delete", methods=["POST"])
+@admin_only
+def bulk_delete_students():
+    """
+    Bulk delete students - accepts a list of student_ids.
+    Uses a single SQLAlchemy query for efficiency.
+    """
+    data = request.get_json()
+    if not data or 'student_ids' not in data:
+        return jsonify({"error": "student_ids array is required"}), 400
+    
+    student_ids = data['student_ids']
+    if not isinstance(student_ids, list) or len(student_ids) == 0:
+        return jsonify({"error": "student_ids must be a non-empty array"}), 400
+    
+    db = SessionLocal()
+    try:
+        from database import Student, Grade
+        
+        # First delete all grades for these students (in bulk)
+        grades_deleted = db.query(Grade).filter(Grade.student_id.in_(student_ids)).delete(synchronize_session=False)
+        app.logger.info(f"Deleted {grades_deleted} grades for {len(student_ids)} students")
+        
+        # Then delete the students in bulk
+        students_deleted = db.query(Student).filter(Student.id.in_(student_ids)).delete(synchronize_session=False)
+        
+        db.commit()
+        app.logger.info(f"Bulk deleted {students_deleted} students")
+        
+        return jsonify({
+            "message": f"Successfully deleted {students_deleted} students and {grades_deleted} grades",
+            "deleted_count": students_deleted,
+            "grades_deleted_count": grades_deleted
+        })
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Bulk delete error: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()
+
+
 # PUT /api/students/<student_id>/class - Assign student to class
 @app.route("/api/students/<student_id>/class", methods=["PUT"])
 @admin_only
@@ -1073,6 +1128,7 @@ def create_grade():
             existing_grade.comment = escape_html(ev["comment"])
             existing_grade.date = data.get("date", str(date.today()))
             existing_grade.submitted_by = current_user["id"]
+            existing_grade.updated_by = current_user["username"]
             db.session.commit()
             grade = existing_grade
         else:
@@ -1086,7 +1142,8 @@ def create_grade():
                 "date": data.get("date", str(date.today())),
                 "exam_instance_id": data["examInstanceId"],
                 "is_locked": True,
-                "submitted_by": current_user["id"]
+                "submitted_by": current_user["id"],
+                "updated_by": current_user["username"]
             }
             grade = database.create_grade(db.session, grade_data)
         db.session.commit()
@@ -1116,6 +1173,9 @@ def update_grade(grade_id):
             return jsonify({"error": "Grade is locked. Contact an administrator to make corrections."}), 403
 
         data = request.get_json()
+        # Capture the teacher/admin who made the update
+        current_username = g.current_user.get("username", "")
+        
         if "score" in data:
             try:
                 score = int(data["score"])
@@ -1126,6 +1186,9 @@ def update_grade(grade_id):
                 return jsonify({"error": str(e)}), 400
         if "date" in data:
             grade.date = data["date"]
+        
+        # Update audit trail
+        grade.updated_by = current_username
         
         db.commit()
         db.refresh(grade)
@@ -1195,11 +1258,56 @@ def admin_update_grade(grade_id):
 
         # Re-lock after admin edit
         grade.is_locked = True
+        
+        # Capture audit trail
+        grade.updated_by = g.current_user.get("username", "")
 
         db.commit()
         db.refresh(grade)
         ev = evaluate_score(grade.score)
         return jsonify({**grade.to_dict(), "rubric": ev["rubric"], "points": ev["points"]})
+    finally:
+        db.close()
+
+
+# ─────────────────────────────────────────────
+# ADMIN AUDIT LOGS
+# ─────────────────────────────────────────────
+
+@app.route("/api/admin/audit-logs", methods=["GET"])
+@admin_only
+def get_audit_logs():
+    """
+    Get audit logs for grade changes - last 50 changes
+    Returns: Student Name, Subject, New Mark, Teacher Name, Timestamp
+    """
+    from database import Grade, Student, Subject
+    db = SessionLocal()
+    try:
+        # Get grades with updated_by populated (sorted by most recent first)
+        grades = db.query(Grade).filter(
+            Grade.updated_by != '',
+            Grade.updated_by.isnot(None)
+        ).order_by(Grade.updated_at.desc()).limit(50).all()
+        
+        # Get all students and subjects for lookup
+        students = {s.id: s.name for s in db.query(Student).all()}
+        subjects = {s.id: s.name for s in db.query(Subject).all()}
+        
+        audit_logs = []
+        for grade in grades:
+            student_name = students.get(grade.student_id, 'Unknown')
+            subject_name = subjects.get(grade.subject_id, 'Unknown')
+            
+            audit_logs.append({
+                "studentName": student_name,
+                "subject": subject_name,
+                "newMark": grade.score,
+                "teacherName": grade.updated_by,
+                "timestamp": grade.updated_at.strftime('%Y-%m-%d %H:%M:%S') if grade.updated_at else None
+            })
+        
+        return jsonify(audit_logs)
     finally:
         db.close()
 

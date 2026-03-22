@@ -15,6 +15,11 @@ export default function StudentsPage({ onToast }) {
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  
+  // Bulk delete state
+  const [selectedStudents, setSelectedStudents] = useState([]);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(null);
+  const [deleteInput, setDeleteInput] = useState("");
 
   const load = useCallback(() => {
     setLoading(true);
@@ -77,6 +82,38 @@ export default function StudentsPage({ onToast }) {
     } catch (e) { onToast(e.message, "error"); }
   };
 
+  // Bulk delete handlers
+  const toggleSelectAll = () => {
+    if (selectedStudents.length === filtered.length) {
+      setSelectedStudents([]);
+    } else {
+      setSelectedStudents(filtered.map(s => s.id));
+    }
+  };
+
+  const toggleSelectStudent = (id) => {
+    if (selectedStudents.includes(id)) {
+      setSelectedStudents(selectedStudents.filter(sid => sid !== id));
+    } else {
+      setSelectedStudents([...selectedStudents, id]);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      const res = await apiFetch("/api/admin/students/bulk-delete", {
+        method: "POST",
+        body: { student_ids: selectedStudents }
+      });
+      if (!res || !res.ok) throw new Error("Bulk delete failed");
+      onToast(`Successfully deleted ${selectedStudents.length} students`, "success");
+      setSelectedStudents([]);
+      setBulkDeleteConfirm(null);
+      setDeleteInput("");
+      load();
+    } catch (e) { onToast(e.message, "error"); }
+  };
+
   const grades = ["Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"];
 
   return (
@@ -100,10 +137,30 @@ export default function StudentsPage({ onToast }) {
               action={!search && <Button onClick={openAdd}><Icon d={Icons.plus} size={16} />Add Student</Button>} />
           ) : (
             <>
+              {/* Bulk Action Bar */}
+              {selectedStudents.length > 0 && (
+                <div className="p-4 bg-red-50 border-b border-red-100 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-red-700">
+                    {selectedStudents.length} student{selectedStudents.length > 1 ? 's' : ''} selected
+                  </span>
+                  <Button variant="danger" onClick={() => setBulkDeleteConfirm(true)}>
+                    <Icon d={Icons.trash} size={16} /> Delete Selected
+                  </Button>
+                </div>
+              )}
+              
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-100">
+                      <th className="px-4 py-4 text-left">
+                        <input
+                          type="checkbox"
+                          checked={selectedStudents.length === filtered.length && filtered.length > 0}
+                          onChange={toggleSelectAll}
+                          className="w-4 h-4 rounded accent-indigo-600"
+                        />
+                      </th>
                       {["Student", "Class", "Actions"].map(h => (
                         <th key={h} className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{h}</th>
                       ))}
@@ -111,7 +168,15 @@ export default function StudentsPage({ onToast }) {
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {filtered.map(s => (
-                      <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
+                      <tr key={s.id} className={`hover:bg-gray-50/50 transition-colors ${selectedStudents.includes(s.id) ? 'bg-indigo-50/30' : ''}`}>
+                        <td className="px-4 py-4">
+                          <input
+                            type="checkbox"
+                            checked={selectedStudents.includes(s.id)}
+                            onChange={() => toggleSelectStudent(s.id)}
+                            className="w-4 h-4 rounded accent-indigo-600"
+                          />
+                        </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center text-sm font-bold text-indigo-600">
@@ -201,6 +266,42 @@ export default function StudentsPage({ onToast }) {
             onToast(`Successfully imported ${newStudents.length} students`, "success");
           }}
         />
+      </Modal>
+
+      {/* Bulk Delete Confirmation Modal */}
+      <Modal open={!!bulkDeleteConfirm} onClose={() => { setBulkDeleteConfirm(null); setDeleteInput(""); }} title="Delete Students">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto">
+            <Icon d={Icons.trash} size={28} color="#ef4444" />
+          </div>
+          <div>
+            <p className="font-semibold text-gray-800">Are you sure you want to delete {selectedStudents.length} students?</p>
+            <p className="text-sm text-gray-500 mt-1">This will also remove all their grades. This action cannot be undone.</p>
+          </div>
+          <div className="text-left p-4 bg-gray-50 rounded-xl">
+            <p className="text-sm text-gray-600 mb-2">
+              Type <span className="font-bold text-red-600">DELETE</span> to confirm:
+            </p>
+            <input
+              type="text"
+              value={deleteInput}
+              onChange={(e) => setDeleteInput(e.target.value)}
+              placeholder="Type DELETE here"
+              className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
+          <div className="flex gap-3">
+            <Button variant="secondary" onClick={() => { setBulkDeleteConfirm(null); setDeleteInput(""); }} className="flex-1">Cancel</Button>
+            <Button 
+              variant="danger" 
+              onClick={handleBulkDelete} 
+              disabled={deleteInput !== "DELETE"}
+              className="flex-1"
+            >
+              Delete {selectedStudents.length} Student{selectedStudents.length > 1 ? 's' : ''}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

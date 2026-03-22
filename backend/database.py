@@ -5,7 +5,7 @@ Supports both local JSON (fallback) and PostgreSQL (production)
 
 import os
 import json
-from sqlalchemy import create_engine, Column, String, Integer, Boolean, ForeignKey, Text, UniqueConstraint
+from sqlalchemy import create_engine, Column, String, Integer, Boolean, ForeignKey, Text, UniqueConstraint, DateTime, func
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker, scoped_session
 
 Base = declarative_base()
@@ -113,6 +113,9 @@ class Grade(Base):
     exam_instance_id = Column(String, ForeignKey('exam_instances.id'), default='')
     is_locked = Column(Boolean, default=False)
     submitted_by = Column(String, default='')
+    # Audit trail columns
+    updated_by = Column(String, default='')
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     
     def to_dict(self):
         return {
@@ -124,7 +127,9 @@ class Grade(Base):
             'date': self.date,
             'examInstanceId': self.exam_instance_id,
             'isLocked': self.is_locked,
-            'submittedBy': self.submitted_by
+            'submittedBy': self.submitted_by,
+            'updatedBy': self.updated_by,
+            'updatedAt': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None
         }
 
 # ==================== DATABASE CONNECTION ====================

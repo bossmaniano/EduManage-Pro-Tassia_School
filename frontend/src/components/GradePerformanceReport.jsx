@@ -148,11 +148,23 @@ export default function GradePerformanceReport({
                 {student.roll}
               </td>
               <td className="border border-black py-1 px-2 font-medium">{student.name}</td>
-              {subjects.map(subject => (
-                <td key={subject.id} className="border border-black py-1 px-2 text-center">
-                  {student.points[subject.id]}
-                </td>
-              ))}
+              {subjects.map(subject => {
+                // Find the specific grade for this student/subject to get audit info
+                const grade = grades.find(g => g.studentId === student.id && g.subjectId === subject.id);
+                const hasGrade = grade && grade.score > 0;
+                const tooltipText = hasGrade && grade.updatedBy 
+                  ? `Last updated by ${grade.updatedBy} on ${grade.updatedAt ? new Date(grade.updatedAt).toLocaleDateString() : 'N/A'} at ${grade.updatedAt ? new Date(grade.updatedAt).toLocaleTimeString() : ''}`
+                  : '';
+                return (
+                  <td 
+                    key={subject.id} 
+                    className="border border-black py-1 px-2 text-center"
+                    title={tooltipText}
+                  >
+                    {student.points[subject.id]}
+                  </td>
+                );
+              })}
               <td className="border border-black py-1 px-2 text-center font-bold">{student.totalPoints}</td>
               <td className="border border-black py-1 px-2 text-center font-bold">{student.avg}%</td>
             </tr>

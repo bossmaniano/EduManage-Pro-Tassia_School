@@ -14,6 +14,7 @@ import CBCAnalysisPage from "./pages/CBCAnalysisPage";
 import ExamInstancesPage from "./pages/ExamInstancesPage";
 import CorrectionsPage from "./pages/CorrectionsPage";
 import ClassesPage from "./pages/ClassesPage";
+import AuditLogsPage from "./pages/AuditLogsPage";
 
 // ── Toast hook helper ───────────────────────────────────────────────────────
 function useToast() {
@@ -35,7 +36,7 @@ function AdminOnly({ children }) {
 
 // ── ProtectedLayout ─────────────────────────────────────────────────────────
 function ProtectedLayout() {
-  const { user, loading, logout, isAdmin, isTeacher } = useAuth();
+  const { user, loading, logout, isAdmin, isTeacher, showTimeoutWarning, extendSession } = useAuth();
   const [toast, showToast] = useToast();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -61,6 +62,7 @@ function ProtectedLayout() {
     { path: "/corrections", label: "Corrections", icon: Icons.edit },
     { path: "/reports", label: "Reports", icon: Icons.reports },
     { path: "/analysis", label: "CBC Analysis", icon: Icons.trending },
+    { path: "/audit-logs", label: "Audit Logs", icon: Icons.clipboard },
   ];
 
   const teacherNav = [
@@ -216,6 +218,40 @@ function ProtectedLayout() {
         </div>
       </main>
 
+      {/* Session Timeout Warning Modal */}
+      {showTimeoutWarning && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md mx-4 shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                <span className="text-2xl">⏰</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Session Expiring</h3>
+                <p className="text-sm text-gray-500">3 minutes remaining</p>
+              </div>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Your session will expire in 3 minutes due to inactivity. Click below to stay logged in.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={logout}
+                className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Log Out
+              </button>
+              <button
+                onClick={extendSession}
+                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors"
+              >
+                Stay Logged In
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Toast msg={toast.msg} type={toast.type} />
     </div>
   );
@@ -262,6 +298,11 @@ function ClassesWrapper() {
 function CBCAnalysisWrapper() {
   const { onToast } = useOutletContext();
   return <CBCAnalysisPage onToast={onToast} />;
+}
+
+function AuditLogsWrapper() {
+  const { onToast } = useOutletContext();
+  return <AuditLogsPage onToast={onToast} />;
 }
 
 // ── Page titles bar above content ────────────────────────────────────────────
@@ -341,6 +382,16 @@ function CBCAnalysisRoute() {
   );
 }
 
+function AuditLogsRoute() {
+  return (
+    <AdminOnly>
+      <PageWithTitle title="Audit Logs" subtitle="Track grade changes and system activity">
+        <AuditLogsWrapper />
+      </PageWithTitle>
+    </AdminOnly>
+  );
+}
+
 // ── Root App ─────────────────────────────────────────────────────────────────
 export default function App() {
   return (
@@ -358,7 +409,8 @@ export default function App() {
             <Route path="exam-instances" element={<ExamInstancesRoute />} />
             <Route path="corrections" element={<CorrectionsRoute />} />
             <Route path="classes" element={<ClassesRoute />} />
-            <Route path="analysis" element={<CBCAnalysisWrapper />} />
+            <Route path="analysis" element={<CBCAnalysisRoute />} />
+            <Route path="audit-logs" element={<AuditLogsRoute />} />
           </Route>
         </Routes>
       </AuthProvider>
