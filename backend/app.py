@@ -16,7 +16,7 @@ from datetime import date, datetime, timedelta
 from functools import wraps
 
 import jwt
-from flask import Flask, jsonify, request, g, make_response, send_from_directory
+from flask import Flask, jsonify, request, g, make_response, send_from_directory, session
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
@@ -56,7 +56,6 @@ app.config['PERMANENT_SESSION_LIFETIME'] = 900  # 15 minutes in seconds
 # Session refresh on activity - reset session lifetime on each request
 @app.before_request
 def before_request():
-    from flask import session, request
     # Reset session/modify session lifetime on every active API request
     if session.get('user_id'):
         session.permanent = True
