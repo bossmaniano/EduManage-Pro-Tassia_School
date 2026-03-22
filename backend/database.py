@@ -113,9 +113,9 @@ class Grade(Base):
     exam_instance_id = Column(String, ForeignKey('exam_instances.id'), default='')
     is_locked = Column(Boolean, default=False)
     submitted_by = Column(String, default='')
-    # Audit trail columns - TEMPORARILY REMOVED FOR MIGRATION
-    # updated_by = Column(String, default='')
-    # updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    # Audit trail columns
+    updated_by = Column(String, default='System/Pre-Migration')
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     
     def to_dict(self):
         return {
@@ -127,9 +127,29 @@ class Grade(Base):
             'date': self.date,
             'examInstanceId': self.exam_instance_id,
             'isLocked': self.is_locked,
-            'submittedBy': self.submitted_by
-            # 'updatedBy': self.updated_by,
-            # 'updatedAt': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None
+            'submittedBy': self.submitted_by,
+            'updatedBy': self.updated_by,
+            'updatedAt': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None
+        }
+
+class GradeAuditLog(Base):
+    __tablename__ = 'grade_audit_log'
+    
+    id = Column(String, primary_key=True)
+    grade_id = Column(String, ForeignKey('grades.id'), nullable=False)
+    old_value = Column(Integer, default=0)
+    new_value = Column(Integer, default=0)
+    changed_by = Column(String, default='')
+    timestamp = Column(DateTime, default=func.now())
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'gradeId': self.grade_id,
+            'oldValue': self.old_value,
+            'newValue': self.new_value,
+            'changedBy': self.changed_by,
+            'timestamp': self.timestamp.strftime('%Y-%m-%d %H:%M:%S') if self.timestamp else None
         }
 
 # ==================== DATABASE CONNECTION ====================
@@ -353,6 +373,43 @@ def update_grade(db, grade_id, grade_data):
         db.commit()
         db.refresh(grade)
     return grade
+
+def create_audit_log(db, grade_id, old_value, new_value, changed_by, commit=True):
+    """Create an audit log entry for a grade change.
+    
+    Args:
+        db: SQLAlchemy session
+        grade_id: ID of the grade being modified
+        old_value: Previous score value
+        new_value: New score value
+        changed_by: Username of who made the change
+        commit: Whether to commit immediately (default True for backward compatibility)
+    """
+    import uuid
+    audit_log = GradeAuditLog(
+        id=str(uuid.uuid4()),
+        grade_id=grade_id,
+        old_value=old_value,
+        new_value=new_value,
+        changed_by=changed_by
+    )
+    db.add(audit_log)
+    if commit:
+        db.commit()
+        db.refresh(audit_log)
+    return audit_log
+
+def get_audit_logs_for_grade(db, grade_id):
+    """Get all audit logs for a specific grade."""
+    return db.query(GradeAuditLog).filter(
+        GradeAuditLog.grade_id == grade_id
+    ).order_by(GradeAuditLog.timestamp.desc()).all()
+
+def get_all_audit_logs(db, limit=50):
+    """Get all audit logs, ordered by most recent first."""
+    return db.query(GradeAuditLog).order_by(
+        GradeAuditLog.timestamp.desc()
+    ).limit(limit).all()
 
 def delete_grade(db, grade_id):
     grade = db.query(Grade).filter(Grade.id == grade_id).first()

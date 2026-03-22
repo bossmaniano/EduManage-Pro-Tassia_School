@@ -292,7 +292,7 @@ function TeacherGradesPage({ onToast }) {
     ? classes.filter(c => assignedClasses.includes(c.id))
     : classes;
 
-  // Map: studentId -> { score, submitting, submitted, gradeId, isLocked }
+  // Map: studentId -> { score, submitting, submitted, gradeId, isLocked, saving, saved }
   const [scoreMap, setScoreMap] = useState({});
 
   const load = useCallback(async () => {
@@ -329,7 +329,54 @@ function TeacherGradesPage({ onToast }) {
   }, [selectedExam, selectedSubject, grades]);
 
   const handleScoreChange = (studentId, val) => {
-    setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], score: val } }));
+    setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], score: val, saved: false } }));
+  };
+
+  // Auto-save on blur (when teacher clicks out or presses Tab)
+  const handleScoreBlur = async (studentId) => {
+    const entry = scoreMap[studentId];
+    if (!entry || !entry.score || entry.submitted || entry.isLocked) return;
+    
+    const score = Number(entry.score);
+    if (isNaN(score) || score < 0 || score > 100 || !Number.isInteger(score)) return;
+    
+    // Skip if already saving or already saved with same value
+    if (entry.saving || entry.saved) return;
+    
+    setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: true } }));
+    
+    try {
+      const payload = { 
+        studentId, 
+        subjectId: selectedSubject, 
+        examInstanceId: selectedExam, 
+        score, 
+        date: new Date().toISOString().slice(0, 10) 
+      };
+      const res = await apiFetch("/api/grades", { method: "POST", body: payload });
+      if (!res || !res.ok) { 
+        const d = await res?.json().catch(() => ({})); 
+        throw new Error(d.error || "Auto-save failed"); 
+      }
+      const newGrade = await res.json();
+      // Update with changedBy from backend (real-time audit info)
+      setScoreMap(prev => ({ 
+        ...prev, 
+        [studentId]: { 
+          score: String(score), 
+          submitted: true, 
+          gradeId: newGrade.id, 
+          isLocked: true, 
+          saving: false, 
+          saved: true,
+          changedBy: newGrade.changedBy || null,
+          updatedAt: new Date().toISOString()
+        } 
+      }));
+    } catch (e) {
+      onToast(e.message, "error");
+      setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: false } }));
+    }
   };
 
   const handleSubmitGrade = async (studentId) => {
@@ -434,10 +481,20 @@ function TeacherGradesPage({ onToast }) {
                             type="number" min="0" max="100" step="1"
                             value={entry.score || ""}
                             onChange={e => handleScoreChange(student.id, e.target.value)}
+                            onBlur={() => handleScoreBlur(student.id)}
                             placeholder="0–100"
                             className="w-20 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50 text-center font-bold"
                           />
-                          {preview && <RubricBadge score={Number(entry.score)} />}
+                          {entry.saving ? (
+                            <span className="text-xs text-gray-400">Saving...</span>
+                          ) : entry.saved ? (
+                            <span 
+                              className="text-green-600 text-xs font-semibold cursor-help" 
+                              title={`Saved by ${entry.changedBy || 'Unknown'} at ${entry.updatedAt ? new Date(entry.updatedAt).toLocaleTimeString() : 'just now'}`}
+                            >✓ Saved</span>
+                          ) : preview ? (
+                            <RubricBadge score={Number(entry.score)} />
+                          ) : null}
                           <Button
                             onClick={() => handleSubmitGrade(student.id)}
                             disabled={entry.submitting || !entry.score}

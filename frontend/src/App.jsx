@@ -39,6 +39,7 @@ function ProtectedLayout() {
   const { user, loading, logout, isAdmin, isTeacher, showTimeoutWarning, extendSession } = useAuth();
   const [toast, showToast] = useToast();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const AUDIT_SYSTEM_STATUS = "ACTIVE";
 
   if (loading) {
     return (
@@ -97,6 +98,13 @@ function ProtectedLayout() {
 
       {/* Sidebar (desktop) */}
       <aside className="hidden lg:flex fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-100 flex-col z-30">
+        {/* Audit System Status */}
+        {AUDIT_SYSTEM_STATUS === "ACTIVE" && (
+          <div className="bg-green-600 text-white text-xs font-bold py-2 text-center">
+            🔒 Audit System: ACTIVE
+          </div>
+        )}
+
         {/* Logo */}
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
@@ -145,8 +153,15 @@ function ProtectedLayout() {
         </div>
       </aside>
 
+      {/* Audit System Status Banner */}
+      {AUDIT_SYSTEM_STATUS === "ACTIVE" && (
+        <div className="fixed top-0 left-0 right-0 bg-green-600 text-white text-xs font-bold py-1.5 text-center z-50">
+          🔒 Audit System: ACTIVE
+        </div>
+      )}
+
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 z-30">
+      <header className={`lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 z-30 ${AUDIT_SYSTEM_STATUS === "ACTIVE" ? "mt-6" : ""}`}>
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
             <Icon d={Icons.award} size={16} color="white" />

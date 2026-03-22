@@ -1122,12 +1122,28 @@ def create_grade():
         ).first()
 
         if existing_grade:
-            # Update existing grade
+            # Update existing grade - capture old value for audit
+            old_score = existing_grade.score
             existing_grade.score = score
             existing_grade.comment = escape_html(ev["comment"])
             existing_grade.date = data.get("date", str(date.today()))
             existing_grade.submitted_by = current_user["id"]
             # existing_grade.updated_by = current_user["username"]
+            
+            # Update audit columns on the grade itself
+            existing_grade.updated_by = current_user.get("username", current_user.get("id", ""))
+            existing_grade.updated_at = datetime.now()
+            
+            # Create audit log entry
+            database.create_audit_log(
+                db.session,
+                grade_id=existing_grade.id,
+                old_value=old_score,
+                new_value=score,
+                changed_by=current_user.get("username", current_user.get("id", "")),
+                commit=False
+            )
+            
             db.session.commit()
             grade = existing_grade
         else:
@@ -1145,8 +1161,25 @@ def create_grade():
                 # "updated_by": current_user["username"]
             }
             grade = database.create_grade(db.session, grade_data)
+            
+            # Set audit columns for new grade
+            grade.updated_by = current_user.get("username", current_user.get("id", ""))
+            grade.updated_at = datetime.now()
+            
+            # Create audit log for new grade (old value is 0)
+            database.create_audit_log(
+                db.session,
+                grade_id=grade.id,
+                old_value=0,
+                new_value=score,
+                changed_by=current_user.get("username", current_user.get("id", "")),
+                commit=False
+            )
+        
+        # Get current username for response
+        changed_by = current_user.get("username", current_user.get("id", ""))
         db.session.commit()
-        return jsonify({**grade.to_dict(), "rubric": ev["rubric"], "points": ev["points"]}), 201
+        return jsonify({**grade.to_dict(), "rubric": ev["rubric"], "points": ev["points"], "changedBy": changed_by}), 201
     except IntegrityError as e:
         app.logger.error(f"IntegrityError (duplicate grade): {e}")
         db.session.rollback()
@@ -1178,21 +1211,34 @@ def update_grade(grade_id):
         if "score" in data:
             try:
                 score = int(data["score"])
+                old_score = grade.score  # Capture old value for audit
                 ev = evaluate_score(score)
                 grade.score = score
                 grade.comment = ev["comment"]
+                
+                # Create audit log entry for score change
+                database.create_audit_log(
+                    db,
+                    grade_id=grade.id,
+                    old_value=old_score,
+                    new_value=score,
+                    changed_by=current_username,
+                    commit=False
+                )
             except (ValueError, TypeError) as e:
                 return jsonify({"error": str(e)}), 400
         if "date" in data:
             grade.date = data["date"]
         
-        # # Update audit trail
-        # grade.updated_by = current_username
+        # Update audit trail columns
+        grade.updated_by = current_username
+        grade.updated_at = datetime.now()
         
         db.commit()
         db.refresh(grade)
         ev = evaluate_score(grade.score)
-        return jsonify({**grade.to_dict(), "rubric": ev["rubric"], "points": ev["points"]})
+        # Include changedBy in response for real-time display
+        return jsonify({**grade.to_dict(), "rubric": ev["rubric"], "points": ev["points"], "changedBy": current_username})
     finally:
         db.close()
 
@@ -1280,28 +1326,36 @@ def get_audit_logs():
     Get audit logs for grade changes - last 50 changes
     Returns: Student Name, Subject, New Mark, Teacher Name, Timestamp
     """
-    from database import Grade, Student, Subject
+    from database import Grade, Student, Subject, GradeAuditLog
     db = SessionLocal()
     try:
-        # Get grades with updated_by populated (sorted by most recent first)
-        # Temporarily disabled - columns need migration
-        grades = []  # db.query(Grade).filter(Grade.updated_by != '', Grade.updated_by.isnot(None)).order_by(Grade.updated_at.desc()).limit(50).all()
+        # Get audit logs from GradeAuditLog table (sorted by most recent first)
+        audit_log_entries = db.query(GradeAuditLog).order_by(
+            GradeAuditLog.timestamp.desc()
+        ).limit(50).all()
         
         # Get all students and subjects for lookup
         students = {s.id: s.name for s in db.query(Student).all()}
         subjects = {s.id: s.name for s in db.query(Subject).all()}
         
+        # Get grades to find student/subject info
+        grade_ids = [log.grade_id for log in audit_log_entries]
+        grades = db.query(Grade).filter(Grade.id.in_(grade_ids)).all() if grade_ids else []
+        grade_map = {g.id: g for g in grades}
+        
         audit_logs = []
-        for grade in grades:
-            student_name = students.get(grade.student_id, 'Unknown')
-            subject_name = subjects.get(grade.subject_id, 'Unknown')
+        for log in audit_log_entries:
+            grade = grade_map.get(log.grade_id)
+            student_name = students.get(grade.student_id, 'Unknown') if grade else 'Unknown'
+            subject_name = subjects.get(grade.subject_id, 'Unknown') if grade else 'Unknown'
             
             audit_logs.append({
                 "studentName": student_name,
                 "subject": subject_name,
-                "newMark": grade.score,
-                "teacherName": "N/A",  # grade.updated_by
-                "timestamp": None  # grade.updated_at.strftime('%Y-%m-%d %H:%M:%S') if grade.updated_at else None
+                "newMark": log.new_value,
+                "oldMark": log.old_value,
+                "teacherName": log.changed_by,
+                "timestamp": log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else None
             })
         
         return jsonify(audit_logs)
