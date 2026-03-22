@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { apiFetch } from "../utils/api";
 import { useAuth } from "../contexts/AuthContext";
 import { Icon, Icons, Card, Modal, FormField, Input, Select, Button, EmptyState, Spinner, RubricBadge, ScoreBar, evaluateScore } from "../components/ui";
@@ -294,6 +294,9 @@ function TeacherGradesPage({ onToast }) {
 
   // Map: studentId -> { score, submitting, submitted, gradeId, isLocked, saving, saved }
   const [scoreMap, setScoreMap] = useState({});
+  
+  // Debounce timeout refs per student to prevent rapid-fire saves
+  const debounceTimeouts = useRef({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -332,8 +335,13 @@ function TeacherGradesPage({ onToast }) {
     setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], score: val, saved: false } }));
   };
 
-  // Auto-save on blur (when teacher clicks out or presses Tab)
+  // Auto-save on blur (when teacher clicks out or presses Tab) - with 500ms debounce
   const handleScoreBlur = async (studentId) => {
+    // Clear any existing debounce timeout for this student
+    if (debounceTimeouts.current[studentId]) {
+      clearTimeout(debounceTimeouts.current[studentId]);
+    }
+    
     const entry = scoreMap[studentId];
     if (!entry || !entry.score || entry.submitted || entry.isLocked) return;
     
@@ -343,41 +351,60 @@ function TeacherGradesPage({ onToast }) {
     // Skip if already saving or already saved with same value
     if (entry.saving || entry.saved) return;
     
-    setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: true } }));
-    
-    try {
-      const payload = { 
-        studentId, 
-        subjectId: selectedSubject, 
-        examInstanceId: selectedExam, 
-        score, 
-        date: new Date().toISOString().slice(0, 10) 
-      };
-      const res = await apiFetch("/api/grades", { method: "POST", body: payload });
-      if (!res || !res.ok) { 
-        const d = await res?.json().catch(() => ({})); 
-        throw new Error(d.error || "Auto-save failed"); 
+    // Debounce: wait 500ms before actually saving
+    debounceTimeouts.current[studentId] = setTimeout(async () => {
+      // Double-check saving state after debounce delay
+      const currentEntry = scoreMap[studentId];
+      if (!currentEntry || currentEntry.saving || currentEntry.saved || currentEntry.submitted) {
+        delete debounceTimeouts.current[studentId];
+        return;
       }
-      const newGrade = await res.json();
-      // Update with changedBy from backend (real-time audit info)
-      setScoreMap(prev => ({ 
-        ...prev, 
-        [studentId]: { 
-          score: String(score), 
-          submitted: true, 
-          gradeId: newGrade.id, 
-          isLocked: true, 
-          saving: false, 
-          saved: true,
-          changedBy: newGrade.changedBy || null,
-          updatedAt: new Date().toISOString()
-        } 
-      }));
-    } catch (e) {
-      onToast(e.message, "error");
-      setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: false } }));
-    }
+      
+      setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: true } }));
+      
+      try {
+        const payload = { 
+          studentId, 
+          subjectId: selectedSubject, 
+          examInstanceId: selectedExam, 
+          score, 
+          date: new Date().toISOString().slice(0, 10) 
+        };
+        const res = await apiFetch("/api/grades", { method: "POST", body: payload });
+        if (!res || !res.ok) { 
+          const d = await res?.json().catch(() => ({})); 
+          throw new Error(d.error || "Auto-save failed"); 
+        }
+        const newGrade = await res.json();
+        // Update with changedBy from backend (real-time audit info)
+        setScoreMap(prev => ({ 
+          ...prev, 
+          [studentId]: { 
+            score: String(score), 
+            submitted: true, 
+            gradeId: newGrade.id, 
+            isLocked: true, 
+            saving: false, 
+            saved: true,
+            changedBy: newGrade.changedBy || null,
+            updatedAt: new Date().toISOString()
+          } 
+        }));
+      } catch (e) {
+        onToast(e.message, "error");
+        setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: false } }));
+      } finally {
+        delete debounceTimeouts.current[studentId];
+      }
+    }, 500);
   };
+  
+  // Cleanup debounce timeouts on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(debounceTimeouts.current).forEach(timeout => clearTimeout(timeout));
+    };
+  }, []);
 
   const handleSubmitGrade = async (studentId) => {
     const entry = scoreMap[studentId] || {};

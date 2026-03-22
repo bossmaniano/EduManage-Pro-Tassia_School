@@ -5,6 +5,7 @@ Supports both local JSON (fallback) and PostgreSQL (production)
 
 import os
 import json
+from datetime import datetime, timedelta
 from sqlalchemy import create_engine, Column, String, Integer, Boolean, ForeignKey, Text, UniqueConstraint, DateTime, func
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker, scoped_session
 
@@ -406,8 +407,26 @@ def create_audit_log(db, grade_id, old_value, new_value, changed_by, commit=True
         new_value: New score value
         changed_by: Username of who made the change
         commit: Whether to commit immediately (default True for backward compatibility)
+        
+    Returns:
+        The audit log entry, or None if duplicate was detected (within 2 seconds)
     """
     import uuid
+    
+    # Deduplication: Check if an identical audit log was created within the last 2 seconds
+    two_seconds_ago = datetime.now() - timedelta(seconds=2)
+    existing_log = db.query(GradeAuditLog).filter(
+        GradeAuditLog.grade_id == grade_id,
+        GradeAuditLog.new_value == new_value,
+        GradeAuditLog.changed_by == changed_by,
+        GradeAuditLog.timestamp >= two_seconds_ago
+    ).first()
+    
+    if existing_log:
+        # Duplicate detected within 2 seconds - skip creating a new entry
+        # Return None to indicate no new log was created
+        return None
+    
     audit_log = GradeAuditLog(
         id=str(uuid.uuid4()),
         grade_id=grade_id,

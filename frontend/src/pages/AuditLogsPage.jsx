@@ -27,6 +27,26 @@ export default function AuditLogsPage({ onToast }) {
     }
   };
 
+  // Format timestamp as "X minutes ago" for easy reading
+  const formatTimeAgo = (timestamp) => {
+    if (!timestamp) return "N/A";
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+
+    if (diffSec < 60) return "Just now";
+    if (diffMin < 60) return `${diffMin} minute${diffMin === 1 ? '' : 's'} ago`;
+    if (diffHour < 24) return `${diffHour} hour${diffHour === 1 ? '' : 's'} ago`;
+    if (diffDay < 7) return `${diffDay} day${diffDay === 1 ? '' : 's'} ago`;
+    
+    // Fall back to full date for older entries
+    return date.toLocaleDateString();
+  };
+
   const formatDate = (timestamp) => {
     if (!timestamp) return "N/A";
     const date = new Date(timestamp);
@@ -115,7 +135,8 @@ export default function AuditLogsPage({ onToast }) {
                       </div>
                     </td>
                     <td className="px-5 py-4 text-sm text-gray-500">
-                      {formatDate(log.timestamp)}
+                      <span className="font-medium text-gray-700">{formatTimeAgo(log.timestamp)}</span>
+                      <span className="block text-xs text-gray-400">{formatDate(log.timestamp)}</span>
                     </td>
                   </tr>
                 ))}
