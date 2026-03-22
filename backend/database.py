@@ -118,7 +118,7 @@ class Grade(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     
     def to_dict(self):
-        return {
+        result = {
             'id': self.id,
             'studentId': self.student_id,
             'subjectId': self.subject_id,
@@ -127,10 +127,17 @@ class Grade(Base):
             'date': self.date,
             'examInstanceId': self.exam_instance_id,
             'isLocked': self.is_locked,
-            'submittedBy': self.submitted_by,
-            'updatedBy': self.updated_by,
-            'updatedAt': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None
+            'submittedBy': self.submitted_by
         }
+        # Add audit fields only if they exist in the database
+        try:
+            result['updatedBy'] = getattr(self, 'updated_by', None)
+            result['updatedAt'] = self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if getattr(self, 'updated_at', None) else None
+        except Exception:
+            # Columns may not exist yet in database
+            result['updatedBy'] = None
+            result['updatedAt'] = None
+        return result
 
 class GradeAuditLog(Base):
     __tablename__ = 'grade_audit_log'
