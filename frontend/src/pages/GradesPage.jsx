@@ -295,9 +295,6 @@ function TeacherGradesPage({ onToast }) {
   // Map: studentId -> { score, submitting, submitted, gradeId, isLocked, saving, saved }
   const [scoreMap, setScoreMap] = useState({});
   
-  // Request lock to prevent duplicate API calls
-  const isProcessing = useRef(false);
-  
   // Debounce timeout refs per student to prevent rapid-fire saves
   const debounceTimeouts = useRef({});
 
@@ -339,35 +336,47 @@ function TeacherGradesPage({ onToast }) {
   };
 
   // Auto-save on blur (when teacher clicks out or presses Tab) - with 500ms debounce
-  const handleScoreBlur = async (studentId) => {
-    // Global request lock - ignore if already processing
-    if (isProcessing.current) return;
+  // Also save on Enter key press
+  const handleScoreBlur = useCallback(async (studentId) => {
+    // CRITICAL: Set lock IMMEDIATELY to prevent race conditions
+    // Use per-student locking to allow parallel saves for different students
+    const entry = scoreMap[studentId];
+    if (!entry) return;
+    
+    // Skip if already saving or already saved with same value
+    if (entry.saving || entry.saved || entry.submitted || entry.isLocked) {
+      return;
+    }
+    
+    // Set saving state immediately to prevent duplicate requests
+    setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: true } }));
     
     // Clear any existing debounce timeout for this student
     if (debounceTimeouts.current[studentId]) {
       clearTimeout(debounceTimeouts.current[studentId]);
     }
     
-    const entry = scoreMap[studentId];
-    if (!entry || !entry.score || entry.submitted || entry.isLocked) return;
+    const currentEntry = scoreMap[studentId];
+    if (!currentEntry || !currentEntry.score || currentEntry.submitted || currentEntry.isLocked) {
+      setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: false } }));
+      return;
+    }
     
-    const score = Number(entry.score);
-    if (isNaN(score) || score < 0 || score > 100 || !Number.isInteger(score)) return;
-    
-    // Skip if already saving or already saved with same value
-    if (entry.saving || entry.saved) return;
+    const score = Number(currentEntry.score);
+    if (isNaN(score) || score < 0 || score > 100 || !Number.isInteger(score)) {
+      setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: false } }));
+      return;
+    }
     
     // Debounce: wait 500ms before actually saving
     debounceTimeouts.current[studentId] = setTimeout(async () => {
       // Double-check saving state after debounce delay
-      const currentEntry = scoreMap[studentId];
-      if (!currentEntry || currentEntry.saving || currentEntry.saved || currentEntry.submitted) {
+      const debouncedEntry = scoreMap[studentId];
+      if (!debouncedEntry || debouncedEntry.saved || debouncedEntry.submitted) {
         delete debounceTimeouts.current[studentId];
+        setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: false } }));
         return;
       }
-      
-      setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: true } }));
-      isProcessing.current = true;
       
       try {
         const payload = { 
@@ -402,10 +411,9 @@ function TeacherGradesPage({ onToast }) {
         setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: false } }));
       } finally {
         delete debounceTimeouts.current[studentId];
-        isProcessing.current = false;
       }
     }, 500);
-  };
+  }, [scoreMap, onToast, selectedExam, selectedSubject]); // useCallback dependencies
   
   // Cleanup debounce timeouts on unmount
   useEffect(() => {
@@ -517,6 +525,7 @@ function TeacherGradesPage({ onToast }) {
                             value={entry.score || ""}
                             onChange={e => handleScoreChange(student.id, e.target.value)}
                             onBlur={() => handleScoreBlur(student.id)}
+                            onKeyDown={e => e.key === 'Enter' && handleScoreBlur(student.id)}
                             placeholder="0–100"
                             className="w-20 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50 text-center font-bold"
                           />
