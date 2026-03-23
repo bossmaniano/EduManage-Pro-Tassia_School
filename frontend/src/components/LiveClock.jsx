@@ -1,4 +1,4 @@
-// Live Clock Component with timeout warning integration
+// Live Clock Component - Bottom-left position with modern styling
 import { useState, useEffect } from "react";
 
 const TOTAL_SESSION_MS = 15 * 60 * 1000; // 15 minutes
@@ -25,38 +25,43 @@ export default function LiveClock({ lastActivityTime, showTimeoutWarning }) {
     return () => clearInterval(interval);
   }, [lastActivityTime]);
 
-  // Format: HH:mm:ss A (e.g., 05:47:12 PM)
-  const formatTime = (date) => {
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true
+  // Format: Monday, March 23 • 06:04 PM
+  const formatDateTime = (date) => {
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+    const monthDay = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+    const timeStr = date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      hour12: true 
     });
-  };
-
-  // Format: Mon, March 23, 2026
-  const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
-    });
+    return `${dayName}, ${monthDay} • ${timeStr}`;
   };
 
   // Warning colors
-  const bgColor = isWarning ? "bg-red-600" : "bg-green-600";
-  const textColor = isWarning ? "text-red-100" : "text-white";
+  const textColor = isWarning ? "text-red-600" : "text-slate-500";
+  const dotColor = isWarning ? "bg-red-500" : "bg-emerald-500";
 
   return (
-    <div className={`inline-flex flex-col items-center px-3 py-1 ${bgColor} ${textColor} rounded-lg ml-3`}>
-      <div className="font-mono text-sm font-bold tracking-wider">
-        {formatTime(time)}
+    <div className={`fixed bottom-4 left-4 z-40 flex items-center gap-2 ${textColor}`}>
+      {/* Location/EAT indicator */}
+      <div className="flex items-center gap-1 text-xs font-medium">
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <span>EAT</span>
       </div>
-      <div className="text-xs opacity-90">
-        {formatDate(time)}
+      
+      {/* Separator */}
+      <span className="text-slate-300">|</span>
+      
+      {/* Time display */}
+      <div className="text-sm font-medium font-mono">
+        {formatDateTime(time)}
       </div>
+      
+      {/* Status dot */}
+      <div className={`w-2 h-2 rounded-full ${dotColor} animate-pulse`} />
     </div>
   );
 }

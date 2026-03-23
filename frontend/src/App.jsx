@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, Outlet } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Icon, Icons, Toast, Spinner } from "./components/ui";
@@ -41,7 +41,19 @@ function ProtectedLayout() {
   const { user, loading, logout, isAdmin, isTeacher, showTimeoutWarning, extendSession, getLastActivityTime } = useAuth();
   const [toast, showToast] = useToast();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [auditToastShown, setAuditToastShown] = useState(false);
   const AUDIT_SYSTEM_STATUS = "ACTIVE";
+
+  // Show audit system toast on first load (login or refresh)
+  useEffect(() => {
+    if (!auditToastShown && !loading && user) {
+      const timer = setTimeout(() => {
+        showToast("Security Audit System: ACTIVE", "success");
+        setAuditToastShown(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [auditToastShown, loading, user, showToast]);
 
   if (loading) {
     return (
@@ -155,19 +167,14 @@ function ProtectedLayout() {
         </div>
       </aside>
 
-      {/* Audit System Status Banner with Live Clock */}
-      {AUDIT_SYSTEM_STATUS === "ACTIVE" && (
-        <div className="fixed top-0 left-0 right-0 bg-green-600 text-white text-xs font-bold py-1.5 px-4 text-center z-50 flex items-center justify-center">
-          <span>🔒 Audit System: ACTIVE</span>
-          <LiveClock 
-            lastActivityTime={getLastActivityTime()} 
-            showTimeoutWarning={showTimeoutWarning}
-          />
-        </div>
-      )}
+      {/* Live Clock - Bottom Left */}
+      <LiveClock 
+        lastActivityTime={getLastActivityTime()} 
+        showTimeoutWarning={showTimeoutWarning}
+      />
 
       {/* Mobile Header */}
-      <header className={`lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 z-30 ${AUDIT_SYSTEM_STATUS === "ACTIVE" ? "mt-6" : ""}`}>
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 z-30">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
             <Icon d={Icons.award} size={16} color="white" />
