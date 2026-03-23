@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, Outlet } fro
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Icon, Icons, Toast, Spinner } from "./components/ui";
 import SessionTimeoutModal from "./components/SessionTimeoutModal";
+import LiveClock from "./components/LiveClock";
 
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -154,10 +155,14 @@ function ProtectedLayout() {
         </div>
       </aside>
 
-      {/* Audit System Status Banner */}
+      {/* Audit System Status Banner with Live Clock */}
       {AUDIT_SYSTEM_STATUS === "ACTIVE" && (
-        <div className="fixed top-0 left-0 right-0 bg-green-600 text-white text-xs font-bold py-1.5 text-center z-50">
-          🔒 Audit System: ACTIVE
+        <div className="fixed top-0 left-0 right-0 bg-green-600 text-white text-xs font-bold py-1.5 px-4 text-center z-50 flex items-center justify-center">
+          <span>🔒 Audit System: ACTIVE</span>
+          <LiveClock 
+            lastActivityTime={getLastActivityTime()} 
+            showTimeoutWarning={showTimeoutWarning}
+          />
         </div>
       )}
 
