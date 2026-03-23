@@ -28,9 +28,11 @@ export default function AuditLogsPage({ onToast }) {
   };
 
   // Format timestamp as "X minutes ago" for easy reading
+  // Safety bridge: add 3 hours to handle UTC->EAT conversion
   const formatTimeAgo = (timestamp) => {
     if (!timestamp) return "N/A";
-    const date = new Date(timestamp);
+    // Add 3 hours as safety bridge for UTC to EAT conversion
+    const date = new Date(new Date(timestamp).getTime() + 3 * 60 * 60 * 1000);
     const now = new Date();
     const diffMs = now - date;
     const diffSec = Math.floor(diffMs / 1000);
@@ -49,7 +51,8 @@ export default function AuditLogsPage({ onToast }) {
 
   const formatDate = (timestamp) => {
     if (!timestamp) return "N/A";
-    const date = new Date(timestamp);
+    // Add 3 hours as safety bridge for UTC to EAT conversion
+    const date = new Date(new Date(timestamp).getTime() + 3 * 60 * 60 * 1000);
     return date.toLocaleDateString() + " " + date.toLocaleTimeString();
   };
 
