@@ -1189,11 +1189,14 @@ def create_grade():
 
         # Check if grade already exists for this student/subject/exam
         from database import Grade
+        
+        # Use database-level locking for first-come-first-serve
+        # This prevents race conditions when multiple requests arrive at the same time
         existing_grade = db.session.query(Grade).filter(
             Grade.student_id == data["studentId"],
             Grade.subject_id == data["subjectId"],
             Grade.exam_instance_id == data["examInstanceId"]
-        ).first()
+        ).with_for_update(nowait=False).first()
 
         if existing_grade:
             # Update existing grade - capture old value for audit
@@ -1217,7 +1220,7 @@ def create_grade():
             db.session.commit()
             grade = existing_grade
         else:
-            # Create new grade with upsert logic
+            # Try to create new grade - use insert to avoid race condition
             grade_data = {
                 "id": str(uuid.uuid4()),
                 "student_id": data["studentId"],
@@ -1228,8 +1231,9 @@ def create_grade():
                 "exam_instance_id": data["examInstanceId"],
                 "is_locked": True,
                 "submitted_by": current_user["id"]
-                # "updated_by": current_user["username"]
             }
+            
+            # Use database.create_grade which handles the unique constraint properly
             grade = database.create_grade(db.session, grade_data)
             
             # Create audit log for new grade (audit via GradeAuditLog table) (old value is 0)
@@ -1249,7 +1253,7 @@ def create_grade():
     except IntegrityError as e:
         app.logger.error(f"IntegrityError (duplicate grade): {e}")
         db.session.rollback()
-        return jsonify({"error": "Data was recently updated by another user. Please refresh."}), 409
+        return jsonify({"error": "Grade was already submitted by another user. First come first serve - please refresh and try again."}), 409
     except Exception as e:
         app.logger.error(f"Error creating grade: {e}")
         db.session.rollback()
