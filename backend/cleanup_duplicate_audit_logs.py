@@ -1,7 +1,6 @@
 """
 One-time script to clean up duplicate audit log entries.
-This script finds and removes identical audit logs that share the exact same
-grade_id, new_value, changed_by, and timestamp, keeping only one.
+Removes records that share the exact same timestamp, grade_id, and new_mark.
 
 Usage:
     python cleanup_duplicate_audit_logs.py
@@ -23,27 +22,22 @@ def cleanup_duplicate_audit_logs():
     db = SessionLocal()
     
     try:
-        # Find duplicate groups: same grade_id, new_value, changed_by, and timestamp (rounded to second)
-        # We use a subquery to find the minimum ID in each duplicate group
-        # and keep only those
-        
         print("Finding duplicate audit log entries...")
         
         # Get all audit logs ordered by timestamp descending
         all_logs = db.query(GradeAuditLog).order_by(GradeAuditLog.timestamp.desc()).all()
         
         # Track seen combinations to identify duplicates
-        # Key: (grade_id, new_value, changed_by, timestamp_second)
+        # Key: (grade_id, new_value, timestamp)
         # Value: list of log IDs to keep/delete
         seen_combinations = {}
         logs_to_delete = []
         
         for log in all_logs:
-            # Round timestamp to second for comparison
-            timestamp_second = log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else None
+            timestamp_str = log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else None
             
-            if timestamp_second:
-                key = (log.grade_id, log.new_value, log.changed_by, timestamp_second)
+            if timestamp_str:
+                key = (log.grade_id, log.new_value, timestamp_str)
                 
                 if key in seen_combinations:
                     # This is a duplicate - mark for deletion

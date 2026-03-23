@@ -417,21 +417,21 @@ def create_audit_log(db, grade_id, old_value, new_value, changed_by, commit=True
         commit: Whether to commit immediately (default True for backward compatibility)
         
     Returns:
-        The audit log entry, or None if duplicate was detected (within 2 seconds)
+        The audit log entry, or None if duplicate was detected (within 5 seconds)
     """
     import uuid
     
-    # Deduplication: Check if an identical audit log was created within the last 2 seconds
-    two_seconds_ago = datetime.now() - timedelta(seconds=2)
+    # Deduplication: Check if an identical audit log was created within the last 5 seconds
+    five_seconds_ago = datetime.now() - timedelta(seconds=5)
     existing_log = db.query(GradeAuditLog).filter(
         GradeAuditLog.grade_id == grade_id,
         GradeAuditLog.new_value == new_value,
         GradeAuditLog.changed_by == changed_by,
-        GradeAuditLog.timestamp >= two_seconds_ago
+        GradeAuditLog.timestamp >= five_seconds_ago
     ).first()
     
     if existing_log:
-        # Duplicate detected within 2 seconds - skip creating a new entry
+        # Duplicate detected within 5 seconds - skip creating a new entry silently
         # Return None to indicate no new log was created
         return None
     
