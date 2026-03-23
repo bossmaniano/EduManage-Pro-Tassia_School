@@ -9,9 +9,12 @@ import os
 import sys
 import html
 import pytz
+import time
 
 # Set timezone to Nairobi/EAT for the entire application
 os.environ['TZ'] = 'Africa/Nairobi'
+time.tzset()
+
 try:
     import fcntl
 except ImportError:
