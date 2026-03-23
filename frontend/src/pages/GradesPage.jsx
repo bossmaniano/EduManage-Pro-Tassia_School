@@ -295,6 +295,9 @@ function TeacherGradesPage({ onToast }) {
   // Map: studentId -> { score, submitting, submitted, gradeId, isLocked, saving, saved }
   const [scoreMap, setScoreMap] = useState({});
   
+  // Request lock to prevent duplicate API calls
+  const isProcessing = useRef(false);
+  
   // Debounce timeout refs per student to prevent rapid-fire saves
   const debounceTimeouts = useRef({});
 
@@ -337,6 +340,9 @@ function TeacherGradesPage({ onToast }) {
 
   // Auto-save on blur (when teacher clicks out or presses Tab) - with 500ms debounce
   const handleScoreBlur = async (studentId) => {
+    // Global request lock - ignore if already processing
+    if (isProcessing.current) return;
+    
     // Clear any existing debounce timeout for this student
     if (debounceTimeouts.current[studentId]) {
       clearTimeout(debounceTimeouts.current[studentId]);
@@ -361,6 +367,7 @@ function TeacherGradesPage({ onToast }) {
       }
       
       setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: true } }));
+      isProcessing.current = true;
       
       try {
         const payload = { 
@@ -395,6 +402,7 @@ function TeacherGradesPage({ onToast }) {
         setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: false } }));
       } finally {
         delete debounceTimeouts.current[studentId];
+        isProcessing.current = false;
       }
     }, 500);
   };

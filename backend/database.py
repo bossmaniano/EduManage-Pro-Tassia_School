@@ -140,6 +140,9 @@ class Grade(Base):
 
 class GradeAuditLog(Base):
     __tablename__ = 'grade_audit_log'
+    __table_args__ = (
+        UniqueConstraint('grade_id', 'new_value', 'changed_by', 'timestamp', name='uix_grade_log'),
+    )
     
     id = Column(String, primary_key=True)
     grade_id = Column(String, nullable=False)  # No FK - stores ID as string to avoid delete conflicts
@@ -420,6 +423,7 @@ def create_audit_log(db, grade_id, old_value, new_value, changed_by, commit=True
         The audit log entry, or None if duplicate was detected (within 5 seconds)
     """
     import uuid
+    from sqlalchemy.exc import IntegrityError
     
     # Deduplication: Check if an identical audit log was created within the last 5 seconds
     five_seconds_ago = datetime.now() - timedelta(seconds=5)
@@ -442,11 +446,17 @@ def create_audit_log(db, grade_id, old_value, new_value, changed_by, commit=True
         new_value=new_value,
         changed_by=changed_by
     )
-    db.add(audit_log)
-    if commit:
-        db.commit()
-        db.refresh(audit_log)
-    return audit_log
+    
+    try:
+        db.add(audit_log)
+        if commit:
+            db.commit()
+            db.refresh(audit_log)
+        return audit_log
+    except IntegrityError:
+        # Unique constraint violation - duplicate entry
+        db.session.rollback()
+        return None
 
 def get_audit_logs_for_grade(db, grade_id):
     """Get all audit logs for a specific grade."""
