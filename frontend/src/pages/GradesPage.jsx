@@ -297,6 +297,12 @@ function TeacherGradesPage({ onToast }) {
   
   // Debounce timeout refs per student to prevent rapid-fire saves
   const debounceTimeouts = useRef({});
+  
+  // Synchronous lock to prevent race conditions between onBlur and onKeyDown
+  const isProcessing = useRef({});
+  
+  // Track last saved value per student to prevent duplicate saves of same value
+  const lastSavedValue = useRef({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -322,11 +328,17 @@ function TeacherGradesPage({ onToast }) {
 
   // When exam+subject changes, populate scoreMap from existing grades
   useEffect(() => {
-    if (!selectedExam || !selectedSubject) { setScoreMap({}); return; }
+    if (!selectedExam || !selectedSubject) { 
+      setScoreMap({}); 
+      lastSavedValue.current = {};
+      return; 
+    }
     const map = {};
     const relevant = grades.filter(g => g.examInstanceId === selectedExam && g.subjectId === selectedSubject);
     relevant.forEach(g => {
       map[g.studentId] = { score: String(g.score), submitted: true, gradeId: g.id, isLocked: g.isLocked };
+      // Initialize lastSavedValue for existing grades
+      lastSavedValue.current[g.studentId] = String(g.score);
     });
     setScoreMap(map);
   }, [selectedExam, selectedSubject, grades]);
@@ -338,13 +350,33 @@ function TeacherGradesPage({ onToast }) {
   // Auto-save on blur (when teacher clicks out or presses Tab) - with 500ms debounce
   // Also save on Enter key press
   const handleScoreBlur = useCallback(async (studentId) => {
-    // CRITICAL: Set lock IMMEDIATELY to prevent race conditions
-    // Use per-student locking to allow parallel saves for different students
+    // Task 1: Synchronous useRef lock - prevents race conditions
+    if (isProcessing.current[studentId]) return;
+    isProcessing.current[studentId] = true;
+    
     const entry = scoreMap[studentId];
-    if (!entry) return;
+    if (!entry) {
+      isProcessing.current[studentId] = false;
+      return;
+    }
     
     // Skip if already saving or already saved with same value
-    if (entry.saving || entry.saved || entry.submitted || entry.isLocked) {
+    if (entry.saving || entry.submitted || entry.isLocked) {
+      isProcessing.current[studentId] = false;
+      return;
+    }
+    
+    // Task 2: Value equality check - prevent saving same value
+    const currentValue = entry.score;
+    if (lastSavedValue.current[studentId] === currentValue) {
+      isProcessing.current[studentId] = false;
+      return;
+    }
+    
+    // Validate score
+    const score = Number(currentValue);
+    if (isNaN(score) || score < 0 || score > 100 || !Number.isInteger(score)) {
+      isProcessing.current[studentId] = false;
       return;
     }
     
@@ -356,24 +388,13 @@ function TeacherGradesPage({ onToast }) {
       clearTimeout(debounceTimeouts.current[studentId]);
     }
     
-    const currentEntry = scoreMap[studentId];
-    if (!currentEntry || !currentEntry.score || currentEntry.submitted || currentEntry.isLocked) {
-      setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: false } }));
-      return;
-    }
-    
-    const score = Number(currentEntry.score);
-    if (isNaN(score) || score < 0 || score > 100 || !Number.isInteger(score)) {
-      setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: false } }));
-      return;
-    }
-    
     // Debounce: wait 500ms before actually saving
     debounceTimeouts.current[studentId] = setTimeout(async () => {
       // Double-check saving state after debounce delay
       const debouncedEntry = scoreMap[studentId];
       if (!debouncedEntry || debouncedEntry.saved || debouncedEntry.submitted) {
         delete debounceTimeouts.current[studentId];
+        isProcessing.current[studentId] = false;
         setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: false } }));
         return;
       }
@@ -392,6 +413,10 @@ function TeacherGradesPage({ onToast }) {
           throw new Error(d.error || "Auto-save failed"); 
         }
         const newGrade = await res.json();
+        
+        // Task 2: Update last saved value after successful save
+        lastSavedValue.current[studentId] = currentValue;
+        
         // Update with changedBy from backend (real-time audit info)
         setScoreMap(prev => ({ 
           ...prev, 
@@ -411,6 +436,7 @@ function TeacherGradesPage({ onToast }) {
         setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: false } }));
       } finally {
         delete debounceTimeouts.current[studentId];
+        isProcessing.current[studentId] = false;
       }
     }, 500);
   }, [scoreMap, onToast, selectedExam, selectedSubject]); // useCallback dependencies
@@ -525,7 +551,11 @@ function TeacherGradesPage({ onToast }) {
                             value={entry.score || ""}
                             onChange={e => handleScoreChange(student.id, e.target.value)}
                             onBlur={() => handleScoreBlur(student.id)}
-                            onKeyDown={e => e.key === 'Enter' && handleScoreBlur(student.id)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                e.target.blur(); // Task 3: Force blur so only onBlur handles save
+                              }
+                            }}
                             placeholder="0–100"
                             className="w-20 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50 text-center font-bold"
                           />
