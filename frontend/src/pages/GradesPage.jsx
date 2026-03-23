@@ -351,7 +351,12 @@ function TeacherGradesPage({ onToast }) {
   // Also save on Enter key press
   const handleScoreBlur = useCallback(async (studentId) => {
     // Task 1: Synchronous useRef lock - prevents race conditions
-    if (isProcessing.current[studentId]) return;
+    console.log('[handleScoreBlur] Called for student:', studentId, 'isProcessing:', isProcessing.current[studentId]);
+    
+    if (isProcessing.current[studentId]) {
+      console.log('[handleScoreBlur] BLOCKED - already processing');
+      return;
+    }
     isProcessing.current[studentId] = true;
     
     const entry = scoreMap[studentId];
@@ -552,8 +557,9 @@ function TeacherGradesPage({ onToast }) {
                             onChange={e => handleScoreChange(student.id, e.target.value)}
                             onBlur={() => handleScoreBlur(student.id)}
                             onKeyDown={e => {
+                              console.log('[onKeyDown] Key:', e.key);
                               if (e.key === 'Enter') {
-                                e.target.blur(); // Task 3: Force blur so only onBlur handles save
+                                e.target.blur(); // Only blur - onBlur will handle the save
                               }
                             }}
                             placeholder="0–100"
