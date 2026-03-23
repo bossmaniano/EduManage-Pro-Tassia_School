@@ -295,9 +295,6 @@ function TeacherGradesPage({ onToast }) {
   // Map: studentId -> { score, submitting, submitted, gradeId, isLocked, saving, saved }
   const [scoreMap, setScoreMap] = useState({});
   
-  // Debounce timeout refs per student to prevent rapid-fire saves
-  const debounceTimeouts = useRef({});
-  
   // Synchronous lock to prevent race conditions between onBlur and onKeyDown
   const isProcessing = useRef({});
   
@@ -347,16 +344,11 @@ function TeacherGradesPage({ onToast }) {
     setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], score: val, saved: false } }));
   };
 
-  // Auto-save on blur (when teacher clicks out or presses Tab) - with 500ms debounce
+  // Auto-save on blur (when teacher clicks out or presses Tab)
   // Also save on Enter key press
   const handleScoreBlur = useCallback(async (studentId) => {
     // Task 1: Synchronous useRef lock - prevents race conditions
-    console.log('[handleScoreBlur] Called for student:', studentId, 'isProcessing:', isProcessing.current[studentId]);
-    
-    if (isProcessing.current[studentId]) {
-      console.log('[handleScoreBlur] BLOCKED - already processing');
-      return;
-    }
+    if (isProcessing.current[studentId]) return;
     isProcessing.current[studentId] = true;
     
     const entry = scoreMap[studentId];
@@ -365,7 +357,7 @@ function TeacherGradesPage({ onToast }) {
       return;
     }
     
-    // Skip if already saving or already saved with same value
+    // Skip if already saving or already submitted/locked
     if (entry.saving || entry.submitted || entry.isLocked) {
       isProcessing.current[studentId] = false;
       return;
@@ -388,71 +380,46 @@ function TeacherGradesPage({ onToast }) {
     // Set saving state immediately to prevent duplicate requests
     setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: true } }));
     
-    // Clear any existing debounce timeout for this student
-    if (debounceTimeouts.current[studentId]) {
-      clearTimeout(debounceTimeouts.current[studentId]);
-    }
-    
-    // Debounce: wait 500ms before actually saving
-    debounceTimeouts.current[studentId] = setTimeout(async () => {
-      // Double-check saving state after debounce delay
-      const debouncedEntry = scoreMap[studentId];
-      if (!debouncedEntry || debouncedEntry.saved || debouncedEntry.submitted) {
-        delete debounceTimeouts.current[studentId];
-        isProcessing.current[studentId] = false;
-        setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: false } }));
-        return;
+    try {
+      const payload = { 
+        studentId, 
+        subjectId: selectedSubject, 
+        examInstanceId: selectedExam, 
+        score, 
+        date: new Date().toISOString().slice(0, 10) 
+      };
+      const res = await apiFetch("/api/grades", { method: "POST", body: payload });
+      if (!res || !res.ok) { 
+        const d = await res?.json().catch(() => ({})); 
+        throw new Error(d.error || "Auto-save failed"); 
       }
+      const newGrade = await res.json();
       
-      try {
-        const payload = { 
-          studentId, 
-          subjectId: selectedSubject, 
-          examInstanceId: selectedExam, 
-          score, 
-          date: new Date().toISOString().slice(0, 10) 
-        };
-        const res = await apiFetch("/api/grades", { method: "POST", body: payload });
-        if (!res || !res.ok) { 
-          const d = await res?.json().catch(() => ({})); 
-          throw new Error(d.error || "Auto-save failed"); 
-        }
-        const newGrade = await res.json();
-        
-        // Task 2: Update last saved value after successful save
-        lastSavedValue.current[studentId] = currentValue;
-        
-        // Update with changedBy from backend (real-time audit info)
-        setScoreMap(prev => ({ 
-          ...prev, 
-          [studentId]: { 
-            score: String(score), 
-            submitted: true, 
-            gradeId: newGrade.id, 
-            isLocked: true, 
-            saving: false, 
-            saved: true,
-            changedBy: newGrade.changedBy || null,
-            updatedAt: new Date().toISOString()
-          } 
-        }));
-      } catch (e) {
-        onToast(e.message, "error");
-        setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: false } }));
-      } finally {
-        delete debounceTimeouts.current[studentId];
-        isProcessing.current[studentId] = false;
-      }
-    }, 500);
+      // Task 2: Update last saved value after successful save
+      lastSavedValue.current[studentId] = currentValue;
+      
+      // Update with changedBy from backend (real-time audit info)
+      setScoreMap(prev => ({ 
+        ...prev, 
+        [studentId]: { 
+          score: String(score), 
+          submitted: true, 
+          gradeId: newGrade.id, 
+          isLocked: true, 
+          saving: false, 
+          saved: true,
+          changedBy: newGrade.changedBy || null,
+          updatedAt: new Date().toISOString()
+        } 
+      }));
+    } catch (e) {
+      onToast(e.message, "error");
+      setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], saving: false } }));
+    } finally {
+      isProcessing.current[studentId] = false;
+    }
   }, [scoreMap, onToast, selectedExam, selectedSubject]); // useCallback dependencies
   
-  // Cleanup debounce timeouts on unmount
-  useEffect(() => {
-    return () => {
-      Object.values(debounceTimeouts.current).forEach(timeout => clearTimeout(timeout));
-    };
-  }, []);
-
   const handleSubmitGrade = async (studentId) => {
     const entry = scoreMap[studentId] || {};
     const score = Number(entry.score);
@@ -557,7 +524,6 @@ function TeacherGradesPage({ onToast }) {
                             onChange={e => handleScoreChange(student.id, e.target.value)}
                             onBlur={() => handleScoreBlur(student.id)}
                             onKeyDown={e => {
-                              console.log('[onKeyDown] Key:', e.key);
                               if (e.key === 'Enter') {
                                 e.target.blur(); // Only blur - onBlur will handle the save
                               }
