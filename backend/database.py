@@ -6,7 +6,15 @@ Supports both local JSON (fallback) and PostgreSQL (production)
 import os
 import json
 from datetime import datetime, timedelta
+import pytz
 from sqlalchemy import create_engine, Column, String, Integer, Boolean, ForeignKey, Text, UniqueConstraint, DateTime, func
+
+# Nairobi timezone (East Africa Time - EAT)
+NAIROBI_TZ = pytz.timezone('Africa/Nairobi')
+
+def nairobi_now():
+    """Get current time in Nairobi/EAT timezone."""
+    return datetime.now(NAIROBI_TZ)
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker, scoped_session
 
 Base = declarative_base()
@@ -138,7 +146,7 @@ class GradeAuditLog(Base):
     old_value = Column(Integer, default=0)
     new_value = Column(Integer, default=0)
     changed_by = Column(String, default='')
-    timestamp = Column(DateTime, default=func.now())
+    timestamp = Column(DateTime, default=nairobi_now)
     
     def to_dict(self):
         return {
@@ -161,7 +169,7 @@ class SecurityEvent(Base):
     ip_address = Column(String, default='')
     user_agent = Column(String, default='')
     details = Column(String, default='')  # Additional details (e.g., attempted username)
-    timestamp = Column(DateTime, default=func.now())
+    timestamp = Column(DateTime, default=nairobi_now)
     
     def to_dict(self):
         return {
