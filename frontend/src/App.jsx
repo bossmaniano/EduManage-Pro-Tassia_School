@@ -167,12 +167,6 @@ function ProtectedLayout() {
         </div>
       </aside>
 
-      {/* Live Clock - Bottom Left */}
-      <LiveClock 
-        lastActivityTime={getLastActivityTime()} 
-        showTimeoutWarning={showTimeoutWarning}
-      />
-
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 z-30">
         <div className="flex items-center gap-2.5">
@@ -239,8 +233,16 @@ function ProtectedLayout() {
         </div>
       )}
 
+      {/* Global Header - Top Right with Clock */}
+      <header className="hidden lg:flex fixed top-0 left-64 right-0 h-14 bg-white/80 backdrop-blur-sm border-b border-gray-100 items-center justify-end px-6 z-40">
+        <LiveClock 
+          lastActivityTime={getLastActivityTime()} 
+          showTimeoutWarning={showTimeoutWarning}
+        />
+      </header>
+
       {/* Main Content */}
-      <main className="lg:ml-64 pt-16 lg:pt-0 pb-20 lg:pb-0 min-h-screen">
+      <main className="lg:ml-64 pt-16 lg:pt-14 pb-20 lg:pb-0 min-h-screen">
         <div className="p-5 lg:p-8 max-w-6xl mx-auto">
           <Outlet context={{ onToast: showToast }} />
         </div>
