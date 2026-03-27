@@ -63,6 +63,10 @@ app.config['PERMANENT_SESSION_LIFETIME'] = 900  # 15 minutes in seconds
 # Session refresh on activity - reset session lifetime on each request
 @app.before_request
 def before_request():
+    # Log every request for debugging
+    print(f"Request: {request.method} {request.url}")
+    print(f"Headers: {dict(request.headers)}")
+    
     # Reset session/modify session lifetime on every active API request
     if session.get('user_id'):
         session.permanent = True
@@ -89,11 +93,12 @@ def root():
 FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL', 'https://edumanage-pro-tassia-school-1.onrender.com')
 
 # Explicit CORS configuration for the frontend
+# TEMPORARY: Allow all origins for debugging login issue
 CORS(app, 
     resources={r"/api/*": {
-        "origins": "https://edumanage-pro-tassia-school-1.onrender.com",
+        "origins": "*",
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"],
+        "allow_headers": ["Content-Type", "Authorization", "Access-Control-Allow-Credentials"],
         "supports_credentials": True
     }},
     supports_credentials=True,
