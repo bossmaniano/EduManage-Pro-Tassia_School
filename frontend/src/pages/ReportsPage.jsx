@@ -341,13 +341,13 @@ export default function ReportsPage({ onToast }) {
                     const passCount = allGrades.filter(g => g.score >= 40).length;
                     const passRate = allGrades.length ? Math.round((passCount / allGrades.length) * 100) : 0;
                     
-                    // Find top performer
+                    // Find top performer (class-specific)
                     const studentAvgs = studentIds.map(sid => {
                       const sGrades = allGrades.filter(g => g.studentId === sid);
                       const sTotal = sGrades.reduce((s, g) => s + g.score, 0);
                       return { id: sid, avg: sGrades.length ? Math.round(sTotal / sGrades.length) : 0 };
                     }).sort((a, b) => b.avg - a.avg);
-                    const topStudent = students.find(s => s.id === studentAvgs[0]?.id);
+                    const topStudent = classReportData.students.find(s => s.id === studentAvgs[0]?.id);
                     
                     return (
                       <>
