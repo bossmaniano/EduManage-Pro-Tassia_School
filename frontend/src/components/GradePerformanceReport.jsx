@@ -21,13 +21,15 @@ export default function GradePerformanceReport({
   className, 
   examInstance 
 }) {
-  // Get all subject IDs from the subjects prop
-  const subjectIds = subjects.map(s => s.id);
+  // Get class subjects (subjects that this class is doing)
+  const classSubjectIds = className?.subjects || [];
   
-  // Use all grades - don't filter by subject list since class subjects may not match database
-  const filteredGrades = grades;
+  // Filter grades to only include subjects that this class is doing
+  const filteredGrades = classSubjectIds.length > 0 
+    ? grades.filter(g => classSubjectIds.includes(g.subjectId))
+    : grades;
   
-  // Get unique subject IDs from grades that exist
+  // Get unique subject IDs from filtered grades (only subjects this class is doing)
   const gradeSubjectIds = [...new Set(filteredGrades.map(g => g.subjectId))];
   
   // Calculate student data WITHOUT rankings (just list students)
