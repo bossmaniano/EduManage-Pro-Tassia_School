@@ -105,8 +105,13 @@ function AdminGradesPage({ onToast }) {
   };
 
   const handleScoreChange = (val) => {
-    setForm(f => ({ ...f, score: val }));
+    // Prevent values greater than 100 from being typed
     const n = Number(val);
+    if (!isNaN(n) && n > 100) {
+      onToast("Invalid Mark: Maximum is 100.", "error");
+      return; // Don't update state with invalid value
+    }
+    setForm(f => ({ ...f, score: val }));
     if (!isNaN(n) && n >= 0 && n <= 100) setScorePreview(evaluateScore(Math.round(n)));
     else setScorePreview(null);
   };
@@ -341,6 +346,12 @@ function TeacherGradesPage({ onToast }) {
   }, [selectedExam, selectedSubject, grades]);
 
   const handleScoreChange = (studentId, val) => {
+    // Prevent values greater than 100 from being typed
+    const numVal = Number(val);
+    if (!isNaN(numVal) && numVal > 100) {
+      onToast("Invalid Mark: Maximum is 100.", "error");
+      return; // Don't update state with invalid value
+    }
     setScoreMap(prev => ({ ...prev, [studentId]: { ...prev[studentId], score: val, saved: false } }));
   };
 
