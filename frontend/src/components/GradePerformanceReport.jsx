@@ -132,11 +132,14 @@ export default function GradePerformanceReport({
           <tr className="bg-gray-100">
             <th className="border border-black py-2 px-2 text-center font-bold w-12">Roll</th>
             <th className="border border-black py-2 px-2 text-left font-bold">Student Name</th>
-            {subjects.map(subject => (
-              <th key={subject.id} className="border border-black py-2 px-2 text-center font-bold w-16">
-                {getSubjectCode(subject.name)}
-              </th>
-            ))}
+            {gradeSubjectIds.map(subjectId => {
+              const subject = subjects.find(s => s.id === subjectId);
+              return (
+                <th key={subjectId} className="border border-black py-2 px-2 text-center font-bold w-16">
+                  {subject ? getSubjectCode(subject.name) : subjectId}
+                </th>
+              );
+            })}
             <th className="border border-black py-2 px-2 text-center font-bold w-16">Total Pts</th>
             <th className="border border-black py-2 px-2 text-center font-bold w-16">Avg %</th>
           </tr>
@@ -148,20 +151,20 @@ export default function GradePerformanceReport({
                 {student.roll}
               </td>
               <td className="border border-black py-1 px-2 font-medium">{student.name}</td>
-              {subjects.map(subject => {
+              {gradeSubjectIds.map(subjectId => {
                 // Find the specific grade for this student/subject to get audit info
-                const grade = grades.find(g => g.studentId === student.id && g.subjectId === subject.id);
+                const grade = grades.find(g => g.studentId === student.id && g.subjectId === subjectId);
                 const hasGrade = grade && grade.score > 0;
                 const tooltipText = hasGrade && grade.updatedBy 
                   ? `Last updated by ${grade.updatedBy} on ${grade.updatedAt ? new Date(grade.updatedAt).toLocaleDateString() : 'N/A'} at ${grade.updatedAt ? new Date(grade.updatedAt).toLocaleTimeString() : ''}`
                   : '';
                 return (
                   <td 
-                    key={subject.id} 
+                    key={subjectId} 
                     className="border border-black py-1 px-2 text-center"
                     title={tooltipText}
                   >
-                    {student.points[subject.id]}
+                    {student.points[subjectId]}
                   </td>
                 );
               })}

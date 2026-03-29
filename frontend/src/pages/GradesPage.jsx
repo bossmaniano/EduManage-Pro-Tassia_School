@@ -508,7 +508,7 @@ function TeacherGradesPage({ onToast }) {
                     <div className="flex items-center gap-3">
                       {isLocked || isSubmitted ? (
                         <div className="flex items-center gap-2">
-                          <div className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold text-gray-700 w-20 text-center">
+                          <div className="px-4 py-3 bg-gray-100 rounded-xl text-base font-bold text-gray-700 w-24 text-center">
                             {entry.score}
                           </div>
                           {preview && <RubricBadge score={Number(entry.score)} />}
@@ -520,6 +520,7 @@ function TeacherGradesPage({ onToast }) {
                         <div className="flex items-center gap-2">
                           <input
                             type="number" min="0" max="100" step="1"
+                            inputMode="decimal"
                             value={entry.score || ""}
                             onChange={e => handleScoreChange(student.id, e.target.value)}
                             onBlur={() => handleScoreBlur(student.id)}
@@ -529,7 +530,7 @@ function TeacherGradesPage({ onToast }) {
                               }
                             }}
                             placeholder="0–100"
-                            className="w-20 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50 text-center font-bold"
+                            className="w-24 px-4 py-3 rounded-xl border border-gray-200 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50 text-center font-bold"
                           />
                           {entry.saving ? (
                             <span className="text-xs text-gray-400">Saving...</span>
