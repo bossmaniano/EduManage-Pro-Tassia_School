@@ -47,6 +47,12 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
     return subjects.filter(s => cls.subjects.includes(s.id) && s.name !== 'French');
   })();
 
+  // Dynamic Subject Scanner: Extract unique subject IDs from grades
+  const activeSubjectIds = [...new Set(grades?.map(g => g.subjectId) || [])];
+  
+  // Filter class subjects to only include those with active grades
+  const activeSubjects = classSubjects.filter(s => activeSubjectIds.includes(s.id));
+
   // Get French grade separately - now just for display, not data bound
   const frenchSubject = subjects?.find(s => s.name === 'French');
   const frenchGrade = frenchSubject ? grades?.find(g => g.subjectId === frenchSubject.id) : null;
@@ -54,9 +60,9 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
   const hasFrenchScore = frenchGrade && frenchGrade.score > 0;
   const { rubric: frenchRubric, points: frenchPoints } = hasFrenchScore ? getRubricAndPoints(frenchScore) : { rubric: '', points: 0 };
 
-  // Calculate average based on class subjects
+  // Calculate average based on active subjects (only subjects with grades)
   const totalScore = grades.reduce((sum, g) => sum + (g.score || 0), 0);
-  const avgScore = classSubjects.length > 0 ? Math.round(totalScore / classSubjects.length) : 0;
+  const avgScore = activeSubjects.length > 0 ? Math.round(totalScore / activeSubjects.length) : 0;
   const totalPoints = grades.reduce((sum, g) => {
     const { points } = getRubricAndPoints(g.score || 0);
     return sum + points;
@@ -109,7 +115,7 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
           </tr>
         </thead>
         <tbody>
-          {classSubjects?.map(subject => {
+          {activeSubjects?.map(subject => {
             const grade = grades?.find(g => g.subjectId === subject.id);
             const score = grade?.score || 0;
             const { rubric, points } = getRubricAndPoints(score);
