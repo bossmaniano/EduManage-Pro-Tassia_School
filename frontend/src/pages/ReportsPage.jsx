@@ -347,7 +347,7 @@ export default function ReportsPage({ onToast }) {
                       const sTotal = sGrades.reduce((s, g) => s + g.score, 0);
                       return { id: sid, avg: sGrades.length ? Math.round(sTotal / sGrades.length) : 0 };
                     }).sort((a, b) => b.avg - a.avg);
-                    const topStudent = classReportData.students.find(s => s.id === studentAvgs[0]?.id);
+                    const topStudent = classReportData.students?.find(s => s.id === studentAvgs[0]?.id);
                     
                     return (
                       <>
