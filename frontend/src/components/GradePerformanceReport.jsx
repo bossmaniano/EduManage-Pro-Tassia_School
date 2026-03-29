@@ -67,8 +67,10 @@ export default function GradePerformanceReport({
     };
   }); // No sorting - students listed without ranking
 
-  // Students listed without rankings
-  const rankedStudents = studentData.map((s, i) => ({ ...s, roll: i + 1 }));
+  // Students ranked by performance (highest to lowest)
+  const rankedStudents = [...studentData]
+    .sort((a, b) => b.avg - a.avg)
+    .map((s, i) => ({ ...s, roll: i + 1 }));
 
   // Calculate class average (mean of all student scores)
   const allScores = filteredGrades.filter(g => g.score > 0).map(g => g.score);
