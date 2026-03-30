@@ -2,7 +2,7 @@ import TassiaHeader from "./TassiaHeader";
 
 // Rubric mapping function
 function getRubricAndPoints(score) {
-  if (score >= 90 && score <= 99) return { rubric: "EE 1", points: 8 };
+  if (score >= 90 && score <= 100) return { rubric: "EE 1", points: 8 };
   if (score >= 75 && score <= 89) return { rubric: "EE 2", points: 7 };
   if (score >= 58 && score <= 74) return { rubric: "ME 1", points: 6 };
   if (score >= 41 && score <= 57) return { rubric: "ME 2", points: 5 };
