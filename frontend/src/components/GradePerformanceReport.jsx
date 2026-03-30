@@ -19,7 +19,8 @@ export default function GradePerformanceReport({
   grades, 
   subjects, 
   className, 
-  examInstance 
+  examInstance,
+  reportMode = "points"
 }) {
   // Get class subjects (subjects that this class is doing)
   const classSubjectIds = className?.subjects || [];
@@ -55,7 +56,12 @@ export default function GradePerformanceReport({
       }
     });
     
-    const avg = subjectCount > 0 ? Math.round(totalScore / subjectCount) : 0;
+    // Calculate average based on report mode
+    const avg = subjectCount > 0 
+      ? (reportMode === "score" 
+          ? Math.round(totalScore / subjectCount) 
+          : Math.round(totalPoints / subjectCount))
+      : 0;
     
     return {
       ...student,
@@ -71,6 +77,13 @@ export default function GradePerformanceReport({
   const rankedStudents = [...studentData]
     .sort((a, b) => b.avg - a.avg)
     .map((s, i) => ({ ...s, roll: i + 1 }));
+
+  // Determine display labels based on report mode
+  const isScoreMode = reportMode === "score";
+  const totalLabel = isScoreMode ? "Total Score" : "Total Pts";
+  const avgLabel = isScoreMode ? "Avg Score" : "Avg %";
+  const summaryLabel1 = isScoreMode ? "Average Score" : "Average Points";
+  const summaryLabel2 = isScoreMode ? "Total Score" : "Total Points";
 
   // Calculate class average (mean of all student scores)
   const allScores = filteredGrades.filter(g => g.score > 0).map(g => g.score);
@@ -113,8 +126,8 @@ export default function GradePerformanceReport({
       {/* Summary Cards */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="border border-black p-3 text-center">
-          <p className="text-xs font-semibold uppercase">Average Points</p>
-          <p className="text-2xl font-bold">{averagePoints}</p>
+          <p className="text-xs font-semibold uppercase">{summaryLabel1}</p>
+          <p className="text-2xl font-bold">{isScoreMode ? classAverage : averagePoints}</p>
         </div>
         <div className="border border-black p-3 text-center">
           <p className="text-xs font-semibold uppercase">Total Students</p>
@@ -125,8 +138,8 @@ export default function GradePerformanceReport({
           <p className="text-2xl font-bold">{classAverage}%</p>
         </div>
         <div className="border border-black p-3 text-center">
-          <p className="text-xs font-semibold uppercase">Total Points</p>
-          <p className="text-2xl font-bold">{rankedStudents.reduce((sum, s) => sum + s.totalPoints, 0)}</p>
+          <p className="text-xs font-semibold uppercase">{summaryLabel2}</p>
+          <p className="text-2xl font-bold">{isScoreMode ? rankedStudents.reduce((sum, s) => sum + s.totalScore, 0) : rankedStudents.reduce((sum, s) => sum + s.totalPoints, 0)}</p>
         </div>
       </div>
 
@@ -144,8 +157,8 @@ export default function GradePerformanceReport({
                 </th>
               );
             })}
-            <th className="border border-black py-2 px-2 text-center font-bold w-16">Total Pts</th>
-            <th className="border border-black py-2 px-2 text-center font-bold w-16">Avg %</th>
+            <th className="border border-black py-2 px-2 text-center font-bold w-16">{totalLabel}</th>
+            <th className="border border-black py-2 px-2 text-center font-bold w-16">{avgLabel}</th>
           </tr>
         </thead>
         <tbody>
@@ -168,12 +181,12 @@ export default function GradePerformanceReport({
                     className="border border-black py-1 px-2 text-center"
                     title={tooltipText}
                   >
-                    {student.points[subjectId]}
+                    {isScoreMode ? student.scores[subjectId] : student.points[subjectId]}
                   </td>
                 );
               })}
-              <td className="border border-black py-1 px-2 text-center font-bold">{student.totalPoints}</td>
-              <td className="border border-black py-1 px-2 text-center font-bold">{student.avg}%</td>
+              <td className="border border-black py-1 px-2 text-center font-bold">{isScoreMode ? student.totalScore : student.totalPoints}</td>
+              <td className="border border-black py-1 px-2 text-center font-bold">{student.avg}{isScoreMode ? '' : '%'}</td>
             </tr>
           ))}
         </tbody>

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useReactToPrint } from "react-to-print";
 import { apiFetch } from "../utils/api";
 import { useAuth } from "../contexts/AuthContext";
-import { Icon, Icons, Card, Select, Button, Spinner, RubricBadge, ScoreBar } from "../components/ui";
+import { Icon, Icons, Card, Select, Button, Spinner, RubricBadge, ScoreBar, Modal } from "../components/ui";
 import TassiaHeader from "../components/TassiaHeader";
 import ProgressReportForm from "../components/ProgressReportForm";
 import GradePerformanceReport from "../components/GradePerformanceReport";
@@ -25,6 +25,9 @@ export default function ReportsPage({ onToast }) {
   const [activeTab, setActiveTab] = useState("student");
   const [massPrintReports, setMassPrintReports] = useState([]);
   const [massPrintLoading, setMassPrintLoading] = useState(false);
+  const [showReportModeModal, setShowReportModeModal] = useState(false);
+  const [reportMode, setReportMode] = useState("points");
+  const [pendingClassReport, setPendingClassReport] = useState(false);
   
   const printRef = useRef();
   const subjectPrintRef = useRef();
@@ -84,6 +87,13 @@ export default function ReportsPage({ onToast }) {
 
   const loadClassReport = async () => {
     if (!selectedClass || !selectedExam) return;
+    // Show report mode selection modal first
+    setShowReportModeModal(true);
+    setPendingClassReport(true);
+  };
+
+  const generateClassReport = async (mode) => {
+    setShowReportModeModal(false);
     setLoadingReport(true);
     try {
       const [studentsRes, gradesRes] = await Promise.all([
@@ -105,12 +115,13 @@ export default function ReportsPage({ onToast }) {
         students: classStudents,
         grades: examGrades,
         class: selectedClassData,
-        examInstance: selectedExamInstance
+        examInstance: selectedExamInstance,
+        reportMode: mode
       });
     } catch (e) { 
       onToast(e.message, "error"); 
     }
-    finally { setLoadingReport(false); }
+    finally { setLoadingReport(false); setPendingClassReport(false); }
   };
 
   const loadMassPrintReports = async () => {
@@ -381,6 +392,7 @@ export default function ReportsPage({ onToast }) {
                   subjects={subjects}
                   className={classReportData.class}
                   examInstance={classReportData.examInstance}
+                  reportMode={classReportData.reportMode || "points"}
                 />
               </div>
             </div>
@@ -616,6 +628,39 @@ export default function ReportsPage({ onToast }) {
           }
         }
       `}</style>
+
+      {/* Report Mode Selection Modal */}
+      <Modal
+        open={showReportModeModal}
+        onClose={() => { setShowReportModeModal(false); setPendingClassReport(false); }}
+        title="Select Report Type"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Choose how you want the class performance report to be calculated:
+          </p>
+          <div className="space-y-3">
+            <button
+              onClick={() => generateClassReport("points")}
+              className="w-full p-4 border border-gray-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-300 transition-all text-left"
+            >
+              <p className="font-semibold text-gray-900">Based on Points</p>
+              <p className="text-sm text-gray-500 mt-1">
+                Uses the CBC rubric points (1-8) derived from scores. Rankings and averages are calculated using points.
+              </p>
+            </button>
+            <button
+              onClick={() => generateClassReport("score")}
+              className="w-full p-4 border border-gray-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-300 transition-all text-left"
+            >
+              <p className="font-semibold text-gray-900">Based on Score</p>
+              <p className="text-sm text-gray-500 mt-1">
+                Uses the actual marks (0-100) entered by the teacher. Rankings and averages are calculated using raw scores.
+              </p>
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
