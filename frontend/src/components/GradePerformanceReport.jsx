@@ -122,46 +122,45 @@ export default function GradePerformanceReport({
       </p>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="border border-black p-3 text-center">
-          <p className="text-xs font-semibold uppercase">{summaryLabel1}</p>
-          <p className="text-2xl font-bold">{isScoreMode ? classAverage : averagePoints}</p>
+      <div className="grid grid-cols-3 gap-6 mb-8">
+        <div className="border-2 border-black p-4 text-center bg-gray-50">
+          <p className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-1">{summaryLabel1}</p>
+          <p className="text-3xl font-extrabold">{isScoreMode ? classAverage : averagePoints}</p>
         </div>
-        <div className="border border-black p-3 text-center">
-          <p className="text-xs font-semibold uppercase">Total Students</p>
-          <p className="text-2xl font-bold">{totalStudents}</p>
+        <div className="border-2 border-black p-4 text-center bg-gray-50">
+          <p className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-1">Total Students</p>
+          <p className="text-3xl font-extrabold">{totalStudents}</p>
         </div>
-        <div className="border border-black p-3 text-center">
-          <p className="text-xs font-semibold uppercase">Class Average</p>
-          <p className="text-2xl font-bold">{classAverage}%</p>
+        <div className="border-2 border-black p-4 text-center bg-gray-50">
+          <p className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-1">Class Average</p>
+          <p className="text-3xl font-extrabold">{classAverage}%</p>
         </div>
-
       </div>
 
       {/* Ranking Table */}
-      <table className="w-full border-collapse border border-black text-sm">
+      <table className="w-full border-collapse border-2 border-black text-sm">
         <thead>
-          <tr className="bg-gray-100">
-            <th className="border border-black py-2 px-2 text-center font-bold w-12">Roll</th>
-            <th className="border border-black py-2 px-2 text-left font-bold">Student Name</th>
+          <tr className="bg-black text-white">
+            <th className="border border-black py-3 px-2 text-center font-bold w-14">Roll</th>
+            <th className="border border-black py-3 px-3 text-left font-bold">Student Name</th>
             {gradeSubjectIds.map(subjectId => {
               const subject = subjects.find(s => s.id === subjectId);
               return (
-                <th key={subjectId} className="border border-black py-2 px-2 text-center font-bold w-16">
+                <th key={subjectId} className="border border-black py-3 px-2 text-center font-bold w-16">
                   {subject ? getSubjectCode(subject.name) : subjectId}
                 </th>
               );
             })}
-            <th className="border border-black py-2 px-2 text-center font-bold w-16">{avgLabel}</th>
+            <th className="border border-black py-3 px-2 text-center font-bold w-16">{avgLabel}</th>
           </tr>
         </thead>
         <tbody>
-          {rankedStudents.map(student => (
-            <tr key={student.id}>
-              <td className="border border-black py-1 px-2 text-center font-bold">
+          {rankedStudents.map((student, index) => (
+            <tr key={student.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+              <td className="border border-black py-2 px-2 text-center font-bold">
                 {student.roll}
               </td>
-              <td className="border border-black py-1 px-2 font-medium">{student.name}</td>
+              <td className="border border-black py-2 px-3 font-medium">{student.name}</td>
               {gradeSubjectIds.map(subjectId => {
                 // Find the specific grade for this student/subject to get audit info
                 const grade = grades.find(g => g.studentId === student.id && g.subjectId === subjectId);
@@ -172,14 +171,14 @@ export default function GradePerformanceReport({
                 return (
                   <td 
                     key={subjectId} 
-                    className="border border-black py-1 px-2 text-center"
+                    className="border border-black py-2 px-2 text-center"
                     title={tooltipText}
                   >
                     {isScoreMode ? student.scores[subjectId] : student.points[subjectId]}
                   </td>
                 );
               })}
-              <td className="border border-black py-1 px-2 text-center font-bold">{student.avg}</td>
+              <td className="border border-black py-2 px-2 text-center font-bold">{student.avg}</td>
             </tr>
           ))}
         </tbody>
