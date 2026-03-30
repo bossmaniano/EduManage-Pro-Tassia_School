@@ -73,6 +73,7 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
       width: '210mm', 
       height: '297mm', 
       padding: '15mm',
+      boxSizing: 'border-box',
       pageBreakAfter: 'always',
       breakAfter: 'page'
     }}>
@@ -181,24 +182,19 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
         </div>
       </div>
 
-      {/* Footer Section - Lined entries with stamp realignment */}
-      <div className="mt-8 flex justify-between items-start">
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">School Fee Arrears:</span>
-            <span className="border-b border-black flex-1"></span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">Next Term Fee:</span>
-            <span className="border-b border-black flex-1"></span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">Next Term Begins:</span>
-            <span className="border-b border-black flex-1"></span>
-          </div>
+      {/* Footer Section - Three-Column Horizontal Fee Layout */}
+      <div className="mt-8 grid grid-cols-3 gap-4">
+        <div>
+          <p className="font-semibold mb-2">School Fee:</p>
+          <div className="border-b border-black w-full"></div>
         </div>
-        <div className="border border-black w-40 h-24 flex items-center justify-center">
-          <span className="text-gray-400 font-semibold">STAMP</span>
+        <div>
+          <p className="font-semibold mb-2">Next Term Fee:</p>
+          <div className="border-b border-black w-full"></div>
+        </div>
+        <div>
+          <p className="font-semibold mb-2">Next Term Begins:</p>
+          <div className="border-b border-black w-full"></div>
         </div>
       </div>
 
