@@ -162,8 +162,8 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
         </div>
       </div>
 
-      {/* Teacher Remarks Section - Expanded with 3 horizontal lines */}
-      <div className="grid grid-cols-2 gap-8 mt-8">
+      {/* Teacher Remarks Section - Stacked vertically */}
+      <div className="mt-8 space-y-6">
         <div>
           <p className="font-semibold mb-3">Class Teacher's Remarks:</p>
           <div className="space-y-4">
