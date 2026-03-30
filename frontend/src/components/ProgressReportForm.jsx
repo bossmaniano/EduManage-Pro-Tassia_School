@@ -185,11 +185,11 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
       {/* Footer Section - Three-Column Horizontal Fee Layout */}
       <div className="mt-8 grid grid-cols-3 gap-4">
         <div>
-          <p className="font-semibold mb-2">School Fee:</p>
+          <p className="font-semibold mb-2">Arrears:</p>
           <div className="border-b border-black w-full"></div>
         </div>
         <div>
-          <p className="font-semibold mb-2">Next Term Fee:</p>
+          <p className="font-semibold mb-2">Next Term Fees:</p>
           <div className="border-b border-black w-full"></div>
         </div>
         <div>
