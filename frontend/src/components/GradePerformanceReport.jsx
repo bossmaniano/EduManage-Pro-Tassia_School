@@ -80,10 +80,8 @@ export default function GradePerformanceReport({
 
   // Determine display labels based on report mode
   const isScoreMode = reportMode === "score";
-  const totalLabel = isScoreMode ? "Total Score" : "Total Pts";
-  const avgLabel = isScoreMode ? "Avg Score" : "Avg %";
+  const avgLabel = isScoreMode ? "Avg Score" : "Avg";
   const summaryLabel1 = isScoreMode ? "Average Score" : "Average Points";
-  const summaryLabel2 = isScoreMode ? "Total Score" : "Total Points";
 
   // Calculate class average (mean of all student scores)
   const allScores = filteredGrades.filter(g => g.score > 0).map(g => g.score);
@@ -137,10 +135,7 @@ export default function GradePerformanceReport({
           <p className="text-xs font-semibold uppercase">Class Average</p>
           <p className="text-2xl font-bold">{classAverage}%</p>
         </div>
-        <div className="border border-black p-3 text-center">
-          <p className="text-xs font-semibold uppercase">{summaryLabel2}</p>
-          <p className="text-2xl font-bold">{isScoreMode ? rankedStudents.reduce((sum, s) => sum + s.totalScore, 0) : rankedStudents.reduce((sum, s) => sum + s.totalPoints, 0)}</p>
-        </div>
+
       </div>
 
       {/* Ranking Table */}
@@ -157,7 +152,6 @@ export default function GradePerformanceReport({
                 </th>
               );
             })}
-            <th className="border border-black py-2 px-2 text-center font-bold w-16">{totalLabel}</th>
             <th className="border border-black py-2 px-2 text-center font-bold w-16">{avgLabel}</th>
           </tr>
         </thead>
@@ -185,8 +179,7 @@ export default function GradePerformanceReport({
                   </td>
                 );
               })}
-              <td className="border border-black py-1 px-2 text-center font-bold">{isScoreMode ? student.totalScore : student.totalPoints}</td>
-              <td className="border border-black py-1 px-2 text-center font-bold">{student.avg}{isScoreMode ? '' : '%'}</td>
+              <td className="border border-black py-1 px-2 text-center font-bold">{student.avg}</td>
             </tr>
           ))}
         </tbody>
