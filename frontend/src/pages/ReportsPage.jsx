@@ -18,6 +18,7 @@ export default function ReportsPage({ onToast }) {
   const [selectedSubject, setSelectedSubject] = useState("");
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedExam, setSelectedExam] = useState("");
+  const [studentSearch, setStudentSearch] = useState("");
   const [studentReport, setStudentReport] = useState(null);
   const [subjectReport, setSubjectReport] = useState(null);
   const [classReportData, setClassReportData] = useState(null);
@@ -210,10 +211,22 @@ export default function ReportsPage({ onToast }) {
           <Card className="p-5">
             <div className="flex flex-wrap gap-3 items-end">
               <div className="flex-1 min-w-48">
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Search Student</label>
+                <input
+                  type="text"
+                  placeholder="Type student name..."
+                  value={studentSearch}
+                  onChange={e => setStudentSearch(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+              <div className="flex-1 min-w-48">
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Select Student</label>
                 <Select value={selectedStudent} onChange={e => { setSelectedStudent(e.target.value); setStudentReport(null); }}>
                   <option value="">Choose a student...</option>
-                  {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  {students
+                    .filter(s => s.name.toLowerCase().includes(studentSearch.toLowerCase()))
+                    .map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </Select>
               </div>
               <div className="min-w-40">

@@ -284,13 +284,17 @@ function TeacherGradesPage({ onToast }) {
   const [selectedExam, setSelectedExam] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
   const [filterClass, setFilterClass] = useState("");
+  const [searchStudent, setSearchStudent] = useState("");
 
-  // Filter students by selected class, or teacher's assigned classes
-  const filteredStudents = filterClass
+  // Filter students by selected class, or teacher's assigned classes, and search
+  const filteredStudents = (filterClass
     ? students.filter(s => s.classId === filterClass)
     : (assignedClasses.length > 0
         ? students.filter(s => s.classId && assignedClasses.includes(s.classId))
-        : students);
+        : students)
+  ).filter(s => 
+    !searchStudent || s.name.toLowerCase().includes(searchStudent.toLowerCase())
+  );
 
   // Available classes for filter dropdown
   const availableClasses = assignedClasses.length > 0
@@ -462,7 +466,7 @@ function TeacherGradesPage({ onToast }) {
       </div>
 
       {/* Selectors */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="space-y-1">
           <label className="block text-sm font-semibold text-gray-700">Exam Instance</label>
           <Select value={selectedExam} onChange={e => setSelectedExam(e.target.value)}>
@@ -483,6 +487,15 @@ function TeacherGradesPage({ onToast }) {
             <option value="">{assignedClasses.length > 0 ? "-- My Classes --" : "-- All Classes --"}</option>
             {availableClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </Select>
+        </div>
+        <div className="space-y-1">
+          <label className="block text-sm font-semibold text-gray-700">Search Student</label>
+          <Input 
+            type="text" 
+            placeholder="Search by name..." 
+            value={searchStudent} 
+            onChange={e => setSearchStudent(e.target.value)}
+          />
         </div>
       </div>
 
