@@ -17,6 +17,7 @@ function AdminGradesPage({ onToast }) {
   const [filterStudent, setFilterStudent] = useState("");
   const [filterSubject, setFilterSubject] = useState("");
   const [filterClass, setFilterClass] = useState("");
+  const [searchStudent, setSearchStudent] = useState("");
   const [form, setForm] = useState({ studentId: "", subjectId: "", examInstanceId: "", score: "", date: "" });
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -46,11 +47,14 @@ function AdminGradesPage({ onToast }) {
     ? students.filter(s => s.classId === filterClass)
     : students;
 
-  const filtered = grades.filter(g =>
-    (!filterStudent || g.studentId === filterStudent) &&
-    (!filterSubject || g.subjectId === filterSubject) &&
-    (!filterClass || (students.find(s => s.id === g.studentId)?.classId === filterClass))
-  );
+  const filtered = grades.filter(g => {
+    const matchesStudent = !filterStudent || g.studentId === filterStudent;
+    const matchesSubject = !filterSubject || g.subjectId === filterSubject;
+    const matchesClass = !filterClass || (students.find(s => s.id === g.studentId)?.classId === filterClass);
+    const student = students.find(s => s.id === g.studentId);
+    const matchesSearch = !searchStudent || (student && student.name.toLowerCase().includes(searchStudent.toLowerCase()));
+    return matchesStudent && matchesSubject && matchesClass && matchesSearch;
+  });
 
   const openAdd = () => {
     setEditGrade(null);
@@ -132,6 +136,13 @@ function AdminGradesPage({ onToast }) {
             <option value="">All Subjects</option>
             {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </Select>
+          <Input
+            type="text"
+            placeholder="Search students..."
+            value={searchStudent}
+            onChange={e => setSearchStudent(e.target.value)}
+            className="w-44"
+          />
         </div>
         <Button onClick={openAdd}><Icon d={Icons.plus} size={16} />Add Grade</Button>
       </div>

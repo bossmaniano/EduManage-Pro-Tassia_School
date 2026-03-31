@@ -67,6 +67,7 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
     const { points } = getRubricAndPoints(g.score || 0);
     return sum + points;
   }, 0);
+  const totalOutOf = activeSubjects.length * 100;
 
   return (
     <div className="report-page" style={{ 
@@ -142,7 +143,7 @@ export default function ProgressReportForm({ student, grades, subjects, examInst
           <tr className="bg-gray-100 font-bold">
             <td className="border border-black py-2 px-2" colSpan={1}>TOTAL</td>
             <td className="border border-black py-2 px-2 text-center">{totalScore}</td>
-            <td className="border border-black py-2 px-2 text-center">100</td>
+            <td className="border border-black py-2 px-2 text-center">{totalOutOf}</td>
             <td className="border border-black py-2 px-2"></td>
             <td className="border border-black py-2 px-2 text-center">{totalPoints}</td>
             <td className="border border-black py-2 px-2"></td>
