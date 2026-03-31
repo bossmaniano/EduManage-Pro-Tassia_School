@@ -152,6 +152,7 @@ export default function GradePerformanceReport({
               );
             })}
             <th className="border border-black py-3 px-2 text-center font-bold w-16">{avgLabel}</th>
+            <th className="border border-black py-3 px-2 text-center font-bold w-20">Total Score</th>
           </tr>
         </thead>
         <tbody>
@@ -179,6 +180,7 @@ export default function GradePerformanceReport({
                 );
               })}
               <td className="border border-black py-2 px-2 text-center font-bold">{student.avg}</td>
+              <td className="border border-black py-2 px-2 text-center font-bold">{isScoreMode ? student.totalScore : student.totalPoints}</td>
             </tr>
           ))}
         </tbody>
