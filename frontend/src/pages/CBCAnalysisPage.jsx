@@ -215,7 +215,7 @@ export default function CBCAnalysisPage({ onToast }) {
                     <th className="px-4 py-2 text-left">Subject</th>
                     <th className="px-4 py-2 text-center">SMP</th>
                     <th className="px-4 py-2 text-center">Students</th>
-                    <th className="px-4 py-2 text-center">Pass Rate</th>
+                    <th className="px-4 py-2 text-center">Avg Score</th>
                     <th className="px-4 py-2 text-center">EE1</th>
                     <th className="px-4 py-2 text-center">EE2</th>
                     <th className="px-4 py-2 text-center">ME1</th>
@@ -232,8 +232,8 @@ export default function CBCAnalysisPage({ onToast }) {
                       <td className="px-4 py-2 font-medium">{subjectName}</td>
                       <td className="px-4 py-2 text-center font-bold">{data.smp?.toFixed(2) || "0.00"}</td>
                       <td className="px-4 py-2 text-center">{data.total_students}</td>
-                      <td className="px-4 py-2 text-center">
-                        {data.pass_rate?.toFixed(1) || "0"}%
+                      <td className="px-4 py-2 text-center font-bold">
+                        {data.average_score?.toFixed(1) || "0"}
                       </td>
                       <td className="px-4 py-2 text-center">
                         <span className={`${getCompetencyColor('EE1')} text-white px-2 py-1 rounded text-sm`}>
@@ -293,7 +293,7 @@ export default function CBCAnalysisPage({ onToast }) {
                       <th className="px-4 py-2 text-left">Stream</th>
                       <th className="px-4 py-2 text-center">SMP</th>
                       <th className="px-4 py-2 text-center">Students</th>
-                      <th className="px-4 py-2 text-center">Pass Rate</th>
+                      <th className="px-4 py-2 text-center">Avg Score</th>
                       <th className="px-4 py-2 text-center">Value Add</th>
                     </tr>
                   </thead>
@@ -303,7 +303,7 @@ export default function CBCAnalysisPage({ onToast }) {
                         <td className="px-4 py-2 font-medium">{streamName || "Unassigned"}</td>
                         <td className="px-4 py-2 text-center font-bold">{data.smp?.toFixed(2) || "0.00"}</td>
                         <td className="px-4 py-2 text-center">{data.total_students}</td>
-                        <td className="px-4 py-2 text-center">{data.pass_rate?.toFixed(1) || "0"}%</td>
+                        <td className="px-4 py-2 text-center font-bold">{data.average_score?.toFixed(1) || "0"}</td>
                         <td className="px-4 py-2 text-center">
                           {data.value_add !== undefined ? (
                             <span className={data.value_add >= 0 ? "text-green-600" : "text-red-600"}>

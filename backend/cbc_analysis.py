@@ -82,8 +82,13 @@ def calculate_subject_mean_points(grades):
         (counts['BE1'] * 2)
     ) / total_students if total_students > 0 else 0
     
+    # Calculate average score
+    total_score = sum(grade.get('score', 0) for grade in grades)
+    average_score = round(total_score / total_students, 1) if total_students > 0 else 0
+    
     return {
         'smp': round(smp, 2),
+        'average_score': average_score,
         'total_students': total_students,
         'competencies': counts,
         'breakdown': counts,
@@ -299,6 +304,7 @@ def generate_cbc_report(grades_data, exam_instance_id, previous_exam_id=None):
         
         subject_analysis[subject_id] = {
             'smp': smp_data['smp'],
+            'average_score': smp_data['average_score'],
             'total_students': smp_data['total_students'],
             'competencies': smp_data['competencies'],
             'breakdown': smp_data['breakdown'],
