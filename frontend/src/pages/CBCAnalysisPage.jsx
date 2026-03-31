@@ -3,7 +3,7 @@ import { apiFetch } from "../utils/api";
 import { Card, Button, Spinner } from "../components/ui";
 import { 
   TrendingUp, TrendingDown, Minus, BarChart3, 
-  Users, CheckCircle
+  Users
 } from "lucide-react";
 
 export default function CBCAnalysisPage({ onToast }) {
@@ -177,39 +177,25 @@ export default function CBCAnalysisPage({ onToast }) {
           </div>
 
           {/* Overall Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="text-center">
-              <BarChart3 className="w-8 h-8 mx-auto text-indigo-600 mb-2" />
-              <p className="text-3xl font-bold text-indigo-600">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="text-center p-6 bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200">
+              <BarChart3 className="w-12 h-12 mx-auto text-indigo-600 mb-3" />
+              <p className="text-5xl font-bold text-indigo-600 mb-2">
                 {analysis.overall?.class_smp?.toFixed(2) || "0.00"}
               </p>
-              <p className="text-sm text-gray-600">{selectedClass ? "Class SMP" : "School SMP"}</p>
+              <p className="text-lg font-semibold text-gray-700">{selectedClass ? "Class SMP" : "School SMP"}</p>
+              <p className="text-sm text-gray-500 mt-2">Standard Mean Performance</p>
             </Card>
             
-            <Card className="text-center">
-              <TrendingUp className="w-8 h-8 mx-auto text-purple-600 mb-2" />
-              <p className="text-3xl font-bold text-purple-600">
-                {analysis.overall?.average_score?.toFixed(1) || "0"}
-              </p>
-              <p className="text-sm text-gray-600">{selectedClass ? "Class Avg Score" : "School Avg Score"}</p>
-            </Card>
-            
-            <Card className="text-center">
-              <Users className="w-8 h-8 mx-auto text-blue-600 mb-2" />
-              <p className="text-3xl font-bold text-blue-600">
+            <Card className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+              <Users className="w-12 h-12 mx-auto text-blue-600 mb-3" />
+              <p className="text-5xl font-bold text-blue-600 mb-2">
                 {analysis.overall?.total_students || 0}
               </p>
-              <p className="text-sm text-gray-600">
+              <p className="text-lg font-semibold text-gray-700">
                 {selectedClass ? "Students in Class" : "Total Students"}
               </p>
-            </Card>
-            
-            <Card className="text-center">
-              <CheckCircle className="w-8 h-8 mx-auto text-green-600 mb-2" />
-              <p className="text-3xl font-bold text-green-600">
-                {analysis.overall?.pass_rate?.toFixed(1) || "0"}%
-              </p>
-              <p className="text-sm text-gray-600">Pass Rate</p>
+              <p className="text-sm text-gray-500 mt-2">Enrolled Learners</p>
             </Card>
           </div>
 
