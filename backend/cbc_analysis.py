@@ -324,6 +324,7 @@ def generate_cbc_report(grades_data, exam_instance_id, previous_exam_id=None):
             'subject_analysis': subject_analysis,
             'overall': {
                 'class_smp': overall_smp['smp'],
+                'average_score': overall_smp['average_score'],
                 'total_students': overall_smp['total_students'],
                 'pass_rate': overall_pass['pass_rate'],
                 'competencies': overall_smp['competencies'],

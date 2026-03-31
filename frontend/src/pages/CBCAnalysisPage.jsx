@@ -177,13 +177,21 @@ export default function CBCAnalysisPage({ onToast }) {
           </div>
 
           {/* Overall Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card className="text-center">
               <BarChart3 className="w-8 h-8 mx-auto text-indigo-600 mb-2" />
               <p className="text-3xl font-bold text-indigo-600">
                 {analysis.overall?.class_smp?.toFixed(2) || "0.00"}
               </p>
-              <p className="text-sm text-gray-600">{selectedClass ? "Class Average" : "School Average"}</p>
+              <p className="text-sm text-gray-600">{selectedClass ? "Class SMP" : "School SMP"}</p>
+            </Card>
+            
+            <Card className="text-center">
+              <TrendingUp className="w-8 h-8 mx-auto text-purple-600 mb-2" />
+              <p className="text-3xl font-bold text-purple-600">
+                {analysis.overall?.average_score?.toFixed(1) || "0"}
+              </p>
+              <p className="text-sm text-gray-600">{selectedClass ? "Class Avg Score" : "School Avg Score"}</p>
             </Card>
             
             <Card className="text-center">
