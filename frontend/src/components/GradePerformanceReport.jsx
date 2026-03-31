@@ -83,12 +83,6 @@ export default function GradePerformanceReport({
   const avgLabel = isScoreMode ? "Avg Score" : "Avg";
   const summaryLabel1 = isScoreMode ? "Average Score" : "Average Points";
 
-  // Calculate class average (mean of all individual student scores)
-  const allScores = filteredGrades.filter(g => g.score > 0).map(g => g.score);
-  const classAverage = allScores.length > 0 
-    ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
-    : 0;
-  
   // Calculate average of student averages (for Average Score display)
   const studentAverages = rankedStudents.filter(s => s.totalPoints > 0).map(s => s.avg);
   const averageScore = studentAverages.length > 0 
@@ -129,18 +123,14 @@ export default function GradePerformanceReport({
       </p>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-6 mb-8">
-        <div className="border-2 border-black p-4 text-center bg-gray-50">
-          <p className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-1">{summaryLabel1}</p>
-          <p className="text-3xl font-extrabold">{isScoreMode ? averageScore : averagePoints}</p>
+      <div className="grid grid-cols-2 gap-8 mb-8">
+        <div className="border-2 border-black p-6 text-center bg-gradient-to-br from-gray-50 to-gray-100 shadow-md">
+          <p className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">{summaryLabel1}</p>
+          <p className="text-4xl font-extrabold text-gray-900">{isScoreMode ? averageScore : averagePoints}</p>
         </div>
-        <div className="border-2 border-black p-4 text-center bg-gray-50">
-          <p className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-1">Total Students</p>
-          <p className="text-3xl font-extrabold">{totalStudents}</p>
-        </div>
-        <div className="border-2 border-black p-4 text-center bg-gray-50">
-          <p className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-1">Class Average</p>
-          <p className="text-3xl font-extrabold">{classAverage}%</p>
+        <div className="border-2 border-black p-6 text-center bg-gradient-to-br from-gray-50 to-gray-100 shadow-md">
+          <p className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Total Students</p>
+          <p className="text-4xl font-extrabold text-gray-900">{totalStudents}</p>
         </div>
       </div>
 
