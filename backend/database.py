@@ -377,9 +377,7 @@ def get_grades_by_subject(db, subject_id):
 def get_grades_by_exam(db, exam_instance_id):
     return db.query(Grade).filter(Grade.exam_instance_id == exam_instance_id).all()
 
-def get_grades_by_subject(db, subject_id):
-    """Get all grades for a specific subject"""
-    return db.query(Grade).filter(Grade.subject_id == subject_id).all()
+
 
 def get_grades_by_exam_and_subject(db, exam_instance_id, subject_id):
     """Get grades for a specific exam and subject"""
