@@ -83,11 +83,18 @@ export default function GradePerformanceReport({
   const avgLabel = isScoreMode ? "Avg Score" : "Avg";
   const summaryLabel1 = isScoreMode ? "Average Score" : "Average Points";
 
-  // Calculate class average (mean of all student scores)
+  // Calculate class average (mean of all individual student scores)
   const allScores = filteredGrades.filter(g => g.score > 0).map(g => g.score);
   const classAverage = allScores.length > 0 
     ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
     : 0;
+  
+  // Calculate average of student averages (for Average Score display)
+  const studentAverages = rankedStudents.filter(s => s.totalPoints > 0).map(s => s.avg);
+  const averageScore = studentAverages.length > 0 
+    ? Math.round(studentAverages.reduce((a, b) => a + b, 0) / studentAverages.length)
+    : 0;
+  
   const allTotalPoints = rankedStudents.map(s => s.totalPoints);
   const averagePoints = allTotalPoints.length > 0 
     ? Math.round(allTotalPoints.reduce((a, b) => a + b, 0) / allTotalPoints.length) 
@@ -125,7 +132,7 @@ export default function GradePerformanceReport({
       <div className="grid grid-cols-3 gap-6 mb-8">
         <div className="border-2 border-black p-4 text-center bg-gray-50">
           <p className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-1">{summaryLabel1}</p>
-          <p className="text-3xl font-extrabold">{isScoreMode ? classAverage : averagePoints}</p>
+          <p className="text-3xl font-extrabold">{isScoreMode ? averageScore : averagePoints}</p>
         </div>
         <div className="border-2 border-black p-4 text-center bg-gray-50">
           <p className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-1">Total Students</p>
